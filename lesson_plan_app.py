@@ -18,139 +18,100 @@ from docx.oxml import parse_xml
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="DLP Generator", layout="centered")
 
-# --- 2. INITIALIZE SESSION STATE ---
-if 'api_key' not in st.session_state:
-    st.session_state.api_key = None
-if 'ai_data' not in st.session_state:
-    st.session_state.ai_data = None
-if 'generated' not in st.session_state:
-    st.session_state.generated = False
+# --- 2. API KEY MANAGEMENT ---
+# Remove the embedded API key and use user-provided key
+EMBEDDED_API_KEY = ""  # Empty now - users will provide their own
 
-# --- 3. API KEY SETTINGS IN SIDEBAR ---
-def add_api_settings():
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### ⚙️ API Settings")
-        
-        # Instructions with link
-        st.markdown("""
-        **Get FREE API Key:**
-        1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-        2. Click **"Get API Key"** → **"Create API Key"**
-        3. Copy your key (starts with AIza)
-        4. Paste below and click Save
-        """)
-        
-        # API Key Input
-        api_input = st.text_input(
-            "Enter Google Gemini API Key:",
-            type="password",
-            placeholder="AIzaSy...",
-            help="Your key will be saved only in this browser session"
-        )
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("💾 Save Key", use_container_width=True):
-                if api_input and api_input.startswith("AIza"):
-                    st.session_state.api_key = api_input.strip()
-                    st.success("✅ API Key saved!")
-                    st.rerun()
-                else:
-                    st.error("❌ Invalid key format")
-        
-        with col2:
-            if st.button("🗑️ Clear", use_container_width=True, type="secondary"):
-                st.session_state.api_key = None
-                st.rerun()
-        
-        # Show current status
-        if st.session_state.api_key:
-            st.info(f"✅ Key: `{st.session_state.api_key[:10]}...`")
-        else:
-            st.warning("⚠️ No API key configured")
-        
-        st.markdown("---")
-
-# --- 4. ORIGINAL HEADER FUNCTION (WITH FIX) ---
+# --- 3. SIMPLIFIED HEADER WITHOUT LOGOS ---
 def add_custom_header():
     """Add custom header with maroon background (NO LOGOS)"""
     
-    # Determine API status
-    has_api_key = st.session_state.api_key is not None
-    status_class = "api-active" if has_api_key else "api-inactive"
-    status_text = "🔑 API: ACTIVE" if has_api_key else "⚠️ API: NOT CONFIGURED"
-    
-    st.markdown(f"""
+    st.markdown("""
     <style>
-    .header-container {{
+    .header-container {
         text-align: center;
         padding: 20px;
         margin-bottom: 25px;
-        background-color: #800000;
+        background-color: #800000; /* MAROON BACKGROUND */
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(128, 0, 0, 0.3);
         color: white;
-    }}
-    .dept-name {{
+    }
+    .dept-name {
         font-size: 24px;
         font-weight: bold;
         color: white;
         margin: 0;
         text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-    }}
-    .division-name {{
+    }
+    .division-name {
         font-size: 20px;
         font-weight: bold;
-        color: #FFD700;
+        color: #FFD700; /* Gold color for contrast */
         margin: 8px 0;
-    }}
-    .school-name {{
+    }
+    .school-name {
         font-size: 28px;
         font-weight: bold;
         color: white;
         margin: 8px 0;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-    }}
-    .header-subtext {{
+    }
+    .header-subtext {
         font-size: 15px;
-        color: #FFD700;
+        color: #FFD700; /* Gold color */
         margin-top: 8px;
         font-style: italic;
-    }}
+    }
     
     /* App title styling */
-    .app-title {{
+    .app-title {
         font-size: 32px;
         font-weight: bold;
         text-align: center;
-        color: #800000;
+        color: #800000; /* Maroon */
         margin: 15px 0 25px 0;
         padding: 10px;
         border-bottom: 3px solid #800000;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    }}
+    }
     
-    /* API status indicator */
-    .api-status {{
-        padding: 8px 15px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: bold;
+    /* API Key Instructions Styling */
+    .api-instructions {
+        background-color: #f8f9fa;
+        border-left: 4px solid #800000;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .api-step {
+        margin: 8px 0;
+    }
+    .step-number {
+        background-color: #800000;
+        color: white;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
         display: inline-block;
-        margin-top: 10px;
-    }}
-    .api-active {{
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }}
-    .api-inactive {{
-        background-color: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-    }}
+        text-align: center;
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    .get-key-button {
+        background-color: #4285F4;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px 0;
+        font-weight: bold;
+    }
+    .get-key-button:hover {
+        background-color: #3367D6;
+    }
     </style>
     
     <div class="header-container">
@@ -158,16 +119,111 @@ def add_custom_header():
         <p class="division-name">DIVISION OF DAVAO DEL SUR</p>
         <p class="school-name">MANUAL NATIONAL HIGH SCHOOL</p>
         <p class="header-subtext">Kiblawan North District</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- 4. API KEY SETTINGS PAGE ---
+def show_api_key_instructions():
+    """Show instructions for getting Google Gemini API Key"""
+    
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🔑 API Key Settings")
+    
+    # Check if API key exists in session state
+    if 'api_key' not in st.session_state:
+        st.session_state.api_key = ""
+    
+    # Get API key from user
+    api_key = st.sidebar.text_input(
+        "Enter your Google Gemini API Key:",
+        type="password",
+        placeholder="AIzaSy...",
+        value=st.session_state.api_key,
+        help="Enter your free API key from Google AI Studio"
+    )
+    
+    # Save to session state
+    st.session_state.api_key = api_key
+    
+    # Show instructions button
+    if st.sidebar.button("📋 How to Get Free API Key"):
+        st.session_state.show_instructions = True
+    
+    # Show status
+    if st.session_state.api_key:
+        st.sidebar.success("✅ API Key Saved")
+    else:
+        st.sidebar.warning("⚠️ API Key Required")
+    
+    return api_key
+
+def show_api_key_instructions_page():
+    """Show detailed instructions for getting API key"""
+    
+    st.title("📋 How to Get Your Free Google Gemini API Key")
+    
+    st.markdown("""
+    <div class="api-instructions">
+        <h3>Follow these simple steps:</h3>
         
-        <div class="api-status {status_class}">
-            {status_text}
+        <div class="api-step">
+            <span class="step-number">1</span> <strong>Go to Google AI Studio</strong>
+        </div>
+        
+        <div class="api-step">
+            <span class="step-number">2</span> <strong>Sign in with your Google Account</strong>
+        </div>
+        
+        <div class="api-step">
+            <span class="step-number">3</span> <strong>Click on "Get API Key" button</strong>
+        </div>
+        
+        <div class="api-step">
+            <span class="step-number">4</span> <strong>Create a new API key</strong>
+        </div>
+        
+        <div class="api-step">
+            <span class="step-number">5</span> <strong>Copy the generated API key</strong>
+        </div>
+        
+        <div class="api-step">
+            <span class="step-number">6</span> <strong>Paste it in the sidebar of this app</strong>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown('<p class="app-title">📚 AI-Powered Lesson Plan Generator</p>', unsafe_allow_html=True)
+    # Button to get API key
+    st.markdown("""
+    <a href="https://aistudio.google.com/apikey" target="_blank" class="get-key-button">
+        🔑 Get Your Free API Key Now
+    </a>
+    """, unsafe_allow_html=True)
+    
+    # Important notes
+    st.markdown("---")
+    st.info("""
+    **Important Notes:**
+    - The API key is **FREE** for limited usage (up to 60 requests per minute)
+    - You need a Google account (Gmail) to get the key
+    - Your API key is stored only in your browser session (not saved on our servers)
+    - The key starts with "AIzaSy" followed by 39 characters
+    """)
+    
+    # Video tutorial link
+    st.markdown("---")
+    st.subheader("🎥 Video Tutorial")
+    st.markdown("""
+    Watch this video tutorial if you need visual guidance:
+    
+    [How to Get Google Gemini API Key - YouTube Tutorial](https://www.youtube.com/results?search_query=how+to+get+google+gemini+api+key)
+    """)
+    
+    # Back button
+    if st.button("← Back to DLP Generator"):
+        st.session_state.show_instructions = False
+        st.rerun()
 
-# --- 5. ORIGINAL CLEAN JSON FUNCTION ---
+# --- 5. AI GENERATOR (UPDATED TO USE USER API KEY) ---
 def clean_json_string(json_string):
     """Clean the JSON string by removing invalid characters and fixing common issues"""
     if not json_string:
@@ -178,27 +234,32 @@ def clean_json_string(json_string):
     json_string = re.sub(r'```\s*', '', json_string)
     
     # Remove bullet points and other invalid characters
-    json_string = json_string.replace('•', '-')
-    json_string = json_string.replace('\u2022', '-')
-    json_string = json_string.replace('\u25cf', '-')
+    json_string = json_string.replace('•', '-')  # Replace bullet points with hyphens
+    json_string = json_string.replace('\u2022', '-')  # Unicode bullet
+    json_string = json_string.replace('\u25cf', '-')  # Black circle bullet
     
     # Fix truncated strings (add closing quotes)
-    json_string = re.sub(r':\s*$', '": ""', json_string)
+    json_string = re.sub(r':\s*$', '": ""', json_string)  # Fix truncated values at end of line
     
     # Fix unclosed quotes in the middle of JSON
     lines = json_string.split('\n')
     cleaned_lines = []
     
     for i, line in enumerate(lines):
+        # Count quotes in the line
         quote_count = line.count('"')
         
+        # If odd number of quotes, add a closing quote at the end
         if quote_count % 2 == 1 and ':' in line:
+            # Find the last colon position
             last_colon_pos = line.rfind(':')
             if last_colon_pos > 0:
+                # Check if there's an opening quote after the colon
                 after_colon = line[last_colon_pos + 1:].strip()
                 if after_colon.startswith('"') and not after_colon.endswith('"'):
                     line = line + '"'
                 elif not after_colon.startswith('"') and after_colon:
+                    # If value doesn't start with quote but should be string
                     value_start = last_colon_pos + 1
                     while value_start < len(line) and line[value_start] in ' \t':
                         value_start += 1
@@ -209,19 +270,283 @@ def clean_json_string(json_string):
     
     json_string = '\n'.join(cleaned_lines)
     
-    # Remove any control characters
+    # Remove any control characters except newlines and tabs
     json_string = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', json_string)
     
     # Fix common JSON issues
-    json_string = re.sub(r',\s*}', '}', json_string)
-    json_string = re.sub(r',\s*]', ']', json_string)
+    json_string = re.sub(r',\s*}', '}', json_string)  # Remove trailing commas before }
+    json_string = re.sub(r',\s*]', ']', json_string)  # Remove trailing commas before ]
     
     return json_string
 
-# --- 6. ORIGINAL IMAGE FETCHER ---
+def generate_lesson_content(subject, grade, quarter, content_std, perf_std, competency, 
+                           obj_cognitive=None, obj_psychomotor=None, obj_affective=None,
+                           lesson_topic=None):
+    try:
+        # Check if API key is provided
+        if not st.session_state.get('api_key'):
+            st.error("❌ Please enter your Google Gemini API Key in the sidebar")
+            st.info("Click on '📋 How to Get Free API Key' button in sidebar for instructions")
+            return None
+        
+        # Use the user's API key
+        genai.configure(api_key=st.session_state.api_key)
+        
+        # Try multiple model options
+        model_options = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro']
+        model = None
+        
+        for model_name in model_options:
+            try:
+                model = genai.GenerativeModel(model_name)
+                # Test with a simple prompt
+                test_response = model.generate_content("Hello")
+                if test_response:
+                    st.sidebar.success(f"✓ Using model: {model_name}")
+                    break
+            except Exception as e:
+                continue
+        
+        if not model:
+            # Fallback to default
+            model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Check if user provided objectives
+        user_provided_objectives = obj_cognitive and obj_psychomotor and obj_affective
+        
+        # Check if user provided topic (optional)
+        user_provided_topic = lesson_topic and lesson_topic.strip()
+        
+        if user_provided_objectives or user_provided_topic:
+            # Build prompt with user-provided content
+            prompt_parts = [
+                f"""You are an expert teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
+                Create a JSON object for a Daily Lesson Plan (DLP).
+                Subject: {subject}, Grade: {grade}, Quarter: {quarter}
+                Content Standard: {content_std}
+                Performance Standard: {perf_std}
+                Learning Competency: {competency}"""]
+            
+            if user_provided_objectives:
+                prompt_parts.append(f"""
+                USER-PROVIDED OBJECTIVES:
+                - Cognitive: {obj_cognitive}
+                - Psychomotor: {obj_psychomotor}
+                - Affective: {obj_affective}
+                IMPORTANT: Use these exact objectives provided by the user. Do NOT modify them.""")
+            
+            if user_provided_topic:
+                prompt_parts.append(f"""
+                USER-PROVIDED LESSON TOPIC/CONTENT:
+                {lesson_topic}
+                IMPORTANT: Use this exact topic/content provided by the user. Do NOT modify it.""")
+            
+            prompt_parts.append(f"""
+            CRITICAL INSTRUCTIONS:
+            1. You MUST generate exactly 5 distinct MULTIPLE CHOICE assessment questions with A, B, C, D choices.
+            2. Each assessment question MUST follow this format: "question|A. choice1|B. choice2|C. choice3|D. choice4"
+            3. The correct answer should be included in the choices.
+            4. Return ONLY valid JSON format.
+            5. Do NOT use bullet points (•) or any markdown in the JSON values.
+            6. All string values must be properly quoted.
+            7. Do NOT include any explanations outside the JSON.
+
+            Return ONLY raw JSON. No markdown formatting.
+            Structure:
+            {{
+                "obj_1": "Cognitive objective",
+                "obj_2": "Psychomotor objective",
+                "obj_3": "Affective objective",
+                "topic": "The main topic (include math equations like 3x^2 if needed)",
+                "integration_within": "Topic within same subject",
+                "integration_across": "Topic across other subject",
+                "resources": {{
+                    "guide": "Teacher Guide reference",
+                    "materials": "Learner Materials reference",
+                    "textbook": "Textbook reference",
+                    "portal": "Learning Resource Portal reference",
+                    "other": "Other Learning Resources"
+                }},
+                "procedure": {{
+                    "review": "Review activity",
+                    "purpose_situation": "Real-life situation motivation description",
+                    "visual_prompt": "A simple 3-word visual description. Example: 'Red Apple Fruit'. NO sentences.",
+                    "vocabulary": "5 terms with definitions",
+                    "activity_main": "Main activity description",
+                    "explicitation": "Detailed explanation of the concept with clear explanations and TWO specific examples with detailed explanations",
+                    "group_1": "Group 1 task",
+                    "group_2": "Group 2 task",
+                    "group_3": "Group 3 task",
+                    "generalization": "Reflection questions"
+                }},
+                "evaluation": {{
+                    "assess_q1": "Question 1 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q2": "Question 2 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q3": "Question 3 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q4": "Question 4 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q5": "Question 5 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assignment": "Assignment task",
+                    "remarks": "Remarks",
+                    "reflection": "Reflection"
+                }}
+            }}
+            """)
+            
+            prompt = "\n".join(prompt_parts)
+        else:
+            # Generate everything automatically
+            prompt = f"""
+            You are an expert teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
+            Create a JSON object for a Daily Lesson Plan (DLP).
+            Subject: {subject}, Grade: {grade}, Quarter: {quarter}
+            Content Standard: {content_std}
+            Performance Standard: {perf_std}
+            Learning Competency: {competency}
+
+            CRITICAL INSTRUCTIONS:
+            1. You MUST generate exactly 5 distinct MULTIPLE CHOICE assessment questions with A, B, C, D choices.
+            2. Each assessment question MUST follow this format: "question|A. choice1|B. choice2|C. choice3|D. choice4"
+            3. The correct answer should be included in the choices.
+            4. Return ONLY valid JSON format.
+            5. Do NOT use bullet points (•) or any markdown in the JSON values.
+            6. All string values must be properly quoted.
+            7. Do NOT include any explanations outside the JSON.
+
+            Return ONLY raw JSON. No markdown formatting.
+            Structure:
+            {{
+                "obj_1": "Cognitive objective",
+                "obj_2": "Psychomotor objective",
+                "obj_3": "Affective objective",
+                "topic": "The main topic (include math equations like 3x^2 if needed)",
+                "integration_within": "Topic within same subject",
+                "integration_across": "Topic across other subject",
+                "resources": {{
+                    "guide": "Teacher Guide reference",
+                    "materials": "Learner Materials reference",
+                    "textbook": "Textbook reference",
+                    "portal": "Learning Resource Portal reference",
+                    "other": "Other Learning Resources"
+                }},
+                "procedure": {{
+                    "review": "Review activity",
+                    "purpose_situation": "Real-life situation motivation description",
+                    "visual_prompt": "A simple 3-word visual description. Example: 'Red Apple Fruit'. NO sentences.",
+                    "vocabulary": "5 terms with definitions",
+                    "activity_main": "Main activity description",
+                    "explicitation": "Detailed explanation of the concept with clear explanations and TWO specific examples with detailed explanations",
+                    "group_1": "Group 1 task",
+                    "group_2": "Group 2 task",
+                    "group_3": "Group 3 task",
+                    "generalization": "Reflection questions"
+                }},
+                "evaluation": {{
+                    "assess_q1": "Question 1 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q2": "Question 2 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q3": "Question 3 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q4": "Question 4 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assess_q5": "Question 5 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
+                    "assignment": "Assignment task",
+                    "remarks": "Remarks",
+                    "reflection": "Reflection"
+                }}
+            }}
+            """
+        
+        response = model.generate_content(prompt)
+        text = response.text
+        
+        # Clean the JSON response
+        cleaned_text = clean_json_string(text)
+        
+        # Log for debugging
+        st.sidebar.text_area("Raw AI Response", cleaned_text[:1000], height=200)
+        
+        # Try to parse the JSON
+        try:
+            ai_data = json.loads(cleaned_text)
+            
+            # If user provided topic but AI didn't use it, override
+            if user_provided_topic and 'topic' in ai_data:
+                ai_data['topic'] = lesson_topic
+                
+            return ai_data
+        except json.JSONDecodeError as je:
+            st.error(f"JSON Parsing Error: {je}")
+            st.sidebar.error("Failed to parse JSON. Attempting manual fix...")
+            
+            # Attempt manual extraction
+            try:
+                # Try to extract JSON using regex
+                json_pattern = r'\{.*\}'
+                match = re.search(json_pattern, cleaned_text, re.DOTALL)
+                if match:
+                    json_str = match.group(0)
+                    # Remove any trailing commas
+                    json_str = re.sub(r',\s*}', '}', json_str)
+                    json_str = re.sub(r',\s*]', ']', json_str)
+                    ai_data = json.loads(json_str)
+                    
+                    # If user provided topic but AI didn't use it, override
+                    if user_provided_topic and 'topic' in ai_data:
+                        ai_data['topic'] = lesson_topic
+                        
+                    return ai_data
+            except Exception as e2:
+                st.error(f"Manual JSON extraction also failed: {e2}")
+                # Create fallback data
+                return create_fallback_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic)
+        
+    except Exception as e:
+        st.error(f"AI Generation Error: {str(e)}")
+        # Create fallback data
+        return create_fallback_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic)
+
+def create_fallback_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic=None):
+    """Create fallback data in case AI generation fails"""
+    topic = lesson_topic if lesson_topic else f"Introduction to {subject}"
+    
+    return {
+        "obj_1": f"Understand {subject} concepts",
+        "obj_2": f"Apply {subject} skills",
+        "obj_3": f"Appreciate the value of {subject}",
+        "topic": topic,
+        "integration_within": f"Related {subject} topics",
+        "integration_across": "Mathematics, Science",
+        "resources": {
+            "guide": "Teacher's Guide",
+            "materials": "Learner's Materials",
+            "textbook": f"{subject} Textbook",
+            "portal": "DepEd LR Portal",
+            "other": "Online resources"
+        },
+        "procedure": {
+            "review": "Review previous lesson",
+            "purpose_situation": "Real-world application",
+            "visual_prompt": "Classroom Learning",
+            "vocabulary": "Term1: Definition1\nTerm2: Definition2\nTerm3: Definition3\nTerm4: Definition4\nTerm5: Definition5",
+            "activity_main": "Group activity to explore the topic",
+            "explicitation": f"Detailed explanation of {subject} with examples. Example 1: Basic application. Example 2: Advanced application.",
+            "group_1": "Research task",
+            "group_2": "Problem-solving task",
+            "group_3": "Presentation task",
+            "generalization": "What did you learn? How can you apply this?"
+        },
+        "evaluation": {
+            "assess_q1": f"What is the main concept of {subject}?|A. Concept A|B. Concept B|C. Concept C|D. Concept D",
+            "assess_q2": f"How would you apply {subject} in real life?|A. Application A|B. Application B|C. Application C|D. Application D",
+            "assess_q3": f"Explain the difference between key terms in {subject}.|A. Difference A|B. Difference B|C. Difference C|D. Difference D",
+            "assess_q4": f"Solve a simple problem using {subject} concepts.|A. Solution A|B. Solution B|C. Solution C|D. Solution D",
+            "assess_q5": f"What are the limitations of {subject} approaches?|A. Limitation A|B. Limitation B|C. Limitation C|D. Limitation D",
+            "assignment": "Research more about the topic",
+            "remarks": "Lesson delivered successfully",
+            "reflection": "Students showed good understanding"
+        }
+    }
+
+# --- 6. IMAGE FETCHER ---
 def fetch_ai_image(keywords):
-    if not keywords: 
-        keywords = "school_classroom"
+    if not keywords: keywords = "school_classroom"
     clean_prompt = re.sub(r'[\n\r\t]', ' ', str(keywords))
     clean_prompt = re.sub(r'[^a-zA-Z0-9 ]', '', clean_prompt).strip()
     
@@ -239,14 +564,16 @@ def fetch_ai_image(keywords):
         return None
     return None
 
-# --- 7. ORIGINAL DOCX HELPERS ---
+# --- 7. DOCX HELPERS ---
 def set_cell_background(cell, color_hex):
     """Sets the background color of a table cell."""
     shading_elm = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color_hex))
     cell._tc.get_or_add_tcPr().append(shading_elm)
 
 def format_text(paragraph, text):
-    """Parses text for ^ (superscript) and _ (subscript)."""
+    """
+    Parses text for ^ (superscript) and _ (subscript).
+    """
     if not text:
         return
 
@@ -295,6 +622,7 @@ def add_row(table, label, content, bold_label=True):
     text_content = ""
     
     if isinstance(content, list):
+        # Join list items with newlines for vertical stacking
         text_content = "\n".join([str(item) for item in content])
     else:
         text_content = str(content) if content else ""
@@ -315,21 +643,27 @@ def parse_multiple_choice_question(q_text):
     if not q_text:
         return "No question provided", []
     
+    # Split by pipe character
     parts = q_text.split('|')
     
     if len(parts) < 5:
+        # If not in expected format, return as-is
         return q_text, []
     
     question = parts[0].strip()
     choices = []
     
+    # Extract choices (should be 4 choices)
     for i in range(1, min(5, len(parts))):
         choice = parts[i].strip()
+        # Ensure choice starts with letter and period
         if not re.match(r'^[A-D]\.', choice):
+            # Add prefix if missing
             choice_prefix = ['A.', 'B.', 'C.', 'D.'][i-1]
             choice = f"{choice_prefix} {choice}"
         choices.append(choice)
     
+    # Ensure we have exactly 4 choices
     while len(choices) < 4:
         choices.append(f"{['A.', 'B.', 'C.', 'D.'][len(choices)]} Choice placeholder")
     
@@ -344,44 +678,53 @@ def add_assessment_row(table, label, eval_sec):
     run_lbl = p_lbl.add_run(label)
     run_lbl.bold = True
     
-    # Content Column (Right)
+    # Content Column (Right) - Build from scratch
     content_cell = row_cells[1]
     
-    # Clear cell
+    # Clear cell by removing all existing paragraphs
     for paragraph in content_cell.paragraphs:
         p = paragraph._element
         p.getparent().remove(p)
     
     # Create new content
+    # 1. Header
     p_header = content_cell.add_paragraph()
     header_run = p_header.add_run("ASSESSMENT (5-item Multiple Choice Quiz)")
     header_run.bold = True
     
+    # 2. Directions
     p_dir = content_cell.add_paragraph()
     p_dir.add_run("DIRECTIONS: Read each question carefully. Choose the letter of the correct answer from options A, B, C, and D.")
     
+    # 3. Empty line for spacing
     content_cell.add_paragraph()
     
-    # Questions with multiple choice format
+    # 4. Questions with multiple choice format
     for i in range(1, 6):
         question_key = f'assess_q{i}'
         raw_question = eval_sec.get(question_key, f'Question {i}')
         
+        # Parse multiple choice question
         question_text, choices = parse_multiple_choice_question(raw_question)
         
+        # Create question paragraph
         p_question = content_cell.add_paragraph()
         
+        # Add question number (bold)
         num_run = p_question.add_run(f"{i}. ")
         num_run.bold = True
         
+        # Add question text with formatting
         if question_text:
             format_text(p_question, question_text)
         
+        # Add choices (A, B, C, D)
         if choices:
             for choice in choices:
                 p_choice = content_cell.add_paragraph()
                 p_choice.paragraph_format.left_indent = Inches(0.3)
                 
+                # Make the choice letter bold (A., B., etc.)
                 choice_match = re.match(r'^([A-D]\.)\s*(.*)', choice)
                 if choice_match:
                     letter_part = choice_match.group(1)
@@ -393,8 +736,10 @@ def add_assessment_row(table, label, eval_sec):
                     if text_part:
                         format_text(p_choice, text_part)
                 else:
+                    # Fallback if format doesn't match
                     format_text(p_choice, choice)
         else:
+            # Fallback: create placeholder choices
             for letter in ['A.', 'B.', 'C.', 'D.']:
                 p_choice = content_cell.add_paragraph()
                 p_choice.paragraph_format.left_indent = Inches(0.3)
@@ -402,10 +747,11 @@ def add_assessment_row(table, label, eval_sec):
                 letter_run.bold = True
                 p_choice.add_run(f"Choice {letter[0]}")
         
+        # Add spacing between questions (except after last question)
         if i < 5:
             content_cell.add_paragraph()
 
-# --- 8. ORIGINAL DOCX CREATOR ---
+# --- 8. DOCX CREATOR ---
 def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     doc = Document()
     
@@ -419,21 +765,26 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     section.right_margin = Inches(0.5)
 
     # --- HEADER FOR DOCUMENT ---
+    # Add school header to document
     header_para = doc.add_paragraph()
     header_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
+    # Department line
     dept_run = header_para.add_run("DEPARTMENT OF EDUCATION REGION XI\n")
     dept_run.bold = True
     dept_run.font.size = Pt(12)
     
+    # Division line
     div_run = header_para.add_run("DIVISION OF DAVAO DEL SUR\n")
     div_run.bold = True
     div_run.font.size = Pt(11)
     
+    # School line
     school_run = header_para.add_run("MANUAL NATIONAL HIGH SCHOOL\n\n")
     school_run.bold = True
     school_run.font.size = Pt(14)
     
+    # Title - CHANGED TO: Daily Lesson Log (DLL) / Daily Lesson Plan (DLP)
     title = doc.add_paragraph("Daily Lesson Log (DLL) / Daily Lesson Plan (DLP)")
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title.runs[0].bold = True
@@ -532,6 +883,7 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     cell_img.add_paragraph(f"\nVocabulary:\n{proc.get('vocabulary','')}")
 
     # --- REVISED: C. Developing Understanding Section ---
+    # Create the content for this section with the new format
     developing_content = f"Activity: {proc.get('activity_main','')}\n\n"
     developing_content += f"EXPLICITATION: {proc.get('explicitation','')}\n\n"
     developing_content += f"Group 1: {proc.get('group_1','')}\n"
@@ -545,325 +897,274 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     add_section_header(table_main, "IV. EVALUATING LEARNING")
     add_assessment_row(table_main, "A. Assessment", eval_sec)
     add_row(table_main, "B. Assignment", eval_sec.get('assignment', ''))
+    add_row(table_main, "C. Remarks", eval_sec.get('remarks', ''))
+    add_row(table_main, "D. Reflection", eval_sec.get('reflection', ''))
+
+    doc.add_paragraph()
+
+    # --- SIGNATORIES TABLE ---
+    sig_table = doc.add_table(rows=1, cols=2)
+    sig_table.autofit = False
     
-    # Save document
-    doc_io = io.BytesIO()
-    doc.save(doc_io)
-    doc_io.seek(0)
+    sig_table.columns[0].width = Inches(4.0)
+    sig_table.columns[1].width = Inches(4.0)
     
-    return doc_io
-
-# --- 9. REVISED AI GENERATOR FUNCTION ---
-def generate_lesson_content(subject, grade, quarter, content_std, perf_std, competency, 
-                           obj_cognitive=None, obj_psychomotor=None, obj_affective=None,
-                           lesson_topic=None):
-    try:
-        # Check if API key exists
-        if not st.session_state.api_key:
-            st.error("❌ No API key configured. Please enter your Google Gemini API key in the sidebar settings.")
-            return create_sample_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic)
-        
-        # Configure with user's API key
-        genai.configure(api_key=st.session_state.api_key)
-        
-        # Try multiple model options
-        model_options = ['gemini-1.5-flash', 'gemini-1.5-pro']
-        model = None
-        
-        for model_name in model_options:
-            try:
-                model = genai.GenerativeModel(model_name)
-                test_response = model.generate_content("Hello")
-                if test_response:
-                    st.sidebar.success(f"✓ Using model: {model_name}")
-                    break
-            except Exception as e:
-                continue
-        
-        if not model:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # Check if user provided objectives
-        user_provided_objectives = obj_cognitive and obj_psychomotor and obj_affective
-        
-        # Check if user provided topic (optional)
-        user_provided_topic = lesson_topic and lesson_topic.strip()
-        
-        if user_provided_objectives or user_provided_topic:
-            prompt_parts = [
-                f"""You are an expert teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
-                Create a JSON object for a Daily Lesson Plan (DLP).
-                Subject: {subject}, Grade: {grade}, Quarter: {quarter}
-                Content Standard: {content_std}
-                Performance Standard: {perf_std}
-                Learning Competency: {competency}"""]
-
-            if user_provided_objectives:
-                prompt_parts.append(f"""
-                USER-PROVIDED OBJECTIVES:
-                - Cognitive: {obj_cognitive}
-                - Psychomotor: {obj_psychomotor}
-                - Affective: {obj_affective}
-                IMPORTANT: Use these exact objectives provided by the user. Do NOT modify them.""")
-
-            if user_provided_topic:
-                prompt_parts.append(f"""
-                USER-PROVIDED LESSON TOPIC/CONTENT:
-                {lesson_topic}
-                IMPORTANT: Use this exact topic/content provided by the user. Do NOT modify it.""")
-
-            prompt_parts.append(f"""
-            CRITICAL INSTRUCTIONS:
-            1. You MUST generate exactly 5 distinct MULTIPLE CHOICE assessment questions with A, B, C, D choices.
-            2. Each assessment question MUST follow this format: "question|A. choice1|B. choice2|C. choice3|D. choice4"
-            3. The correct answer should be included in the choices.
-            4. Return ONLY valid JSON format.
-            5. Do NOT use bullet points (•) or any markdown in the JSON values.
-            6. All string values must be properly quoted.
-            7. Do NOT include any explanations outside the JSON.
-
-            Return ONLY raw JSON. No markdown formatting.
-            Structure:
-            {{
-                "obj_1": "Cognitive objective",
-                "obj_2": "Psychomotor objective",
-                "obj_3": "Affective objective",
-                "topic": "The main topic (include math equations like 3x^2 if needed)",
-                "integration_within": "Topic within same subject",
-                "integration_across": "Topic across other subject",
-                "resources": {{
-                    "guide": "Teacher Guide reference",
-                    "materials": "Learner Materials reference",
-                    "textbook": "Textbook reference",
-                    "portal": "Learning Resource Portal reference",
-                    "other": "Other Learning Resources"
-                }},
-                "procedure": {{
-                    "review": "Review activity",
-                    "purpose_situation": "Real-life situation motivation description",
-                    "visual_prompt": "A simple 3-word visual description. Example: 'Red Apple Fruit'. NO sentences.",
-                    "vocabulary": "5 terms with definitions",
-                    "activity_main": "Main activity description",
-                    "explicitation": "Detailed explanation of the concept with clear explanations and TWO specific examples with detailed explanations",
-                    "group_1": "Group 1 task",
-                    "group_2": "Group 2 task",
-                    "group_3": "Group 3 task",
-                    "generalization": "Reflection questions"
-                }},
-                "evaluation": {{
-                    "assess_q1": "Question 1 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q2": "Question 2 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q3": "Question 3 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q4": "Question 4 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q5": "Question 5 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assignment": "Assignment task",
-                    "remarks": "Remarks",
-                    "reflection": "Reflection"
-                }}
-            }}
-            """)
-            
-            prompt = "\n".join(prompt_parts)
-        else:
-            prompt = f"""
-            You are an expert teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
-            Create a JSON object for a Daily Lesson Plan (DLP).
-            Subject: {subject}, Grade: {grade}, Quarter: {quarter}
-            Content Standard: {content_std}
-            Performance Standard: {perf_std}
-            Learning Competency: {competency}
-
-            CRITICAL INSTRUCTIONS:
-            1. You MUST generate exactly 5 distinct MULTIPLE CHOICE assessment questions with A, B, C, D choices.
-            2. Each assessment question MUST follow this format: "question|A. choice1|B. choice2|C. choice3|D. choice4"
-            3. The correct answer should be included in the choices.
-            4. Return ONLY valid JSON format.
-            5. Do NOT use bullet points (•) or any markdown in the JSON values.
-            6. All string values must be properly quoted.
-            7. Do NOT include any explanations outside the JSON.
-
-            Return ONLY raw JSON. No markdown formatting.
-            Structure:
-            {{
-                "obj_1": "Cognitive objective",
-                "obj_2": "Psychomotor objective",
-                "obj_3": "Affective objective",
-                "topic": "The main topic (include math equations like 3x^2 if needed)",
-                "integration_within": "Topic within same subject",
-                "integration_across": "Topic across other subject",
-                "resources": {{
-                    "guide": "Teacher Guide reference",
-                    "materials": "Learner Materials reference",
-                    "textbook": "Textbook reference",
-                    "portal": "Learning Resource Portal reference",
-                    "other": "Other Learning Resources"
-                }},
-                "procedure": {{
-                    "review": "Review activity",
-                    "purpose_situation": "Real-life situation motivation description",
-                    "visual_prompt": "A simple 3-word visual description. Example: 'Red Apple Fruit'. NO sentences.",
-                    "vocabulary": "5 terms with definitions",
-                    "activity_main": "Main activity description",
-                    "explicitation": "Detailed explanation of the concept with clear explanations and TWO specific examples with detailed explanations",
-                    "group_1": "Group 1 task",
-                    "group_2": "Group 2 task",
-                    "group_3": "Group 3 task",
-                    "generalization": "Reflection questions"
-                }},
-                "evaluation": {{
-                    "assess_q1": "Question 1 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q2": "Question 2 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q3": "Question 3 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q4": "Question 4 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assess_q5": "Question 5 with choices in format: question|A. choice1|B. choice2|C. choice3|D. choice4",
-                    "assignment": "Assignment task",
-                    "remarks": "Remarks",
-                    "reflection": "Reflection"
-                }}
-            }}
-            """
-        
-        response = model.generate_content(prompt)
-        text = response.text
-        
-        # Clean the JSON response
-        cleaned_text = clean_json_string(text)
-        
-        # Try to parse the JSON
-        try:
-            ai_data = json.loads(cleaned_text)
-            
-            # If user provided topic but AI didn't use it, override
-            if user_provided_topic and 'topic' in ai_data:
-                ai_data['topic'] = lesson_topic
-                
-            return ai_data
-        except json.JSONDecodeError as je:
-            st.error(f"JSON Parsing Error: {je}")
-            return create_sample_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic)
-        
-    except Exception as e:
-        st.error(f"AI Generation Error: {str(e)}")
-        return create_sample_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic)
-
-# --- 10. SAMPLE DATA FUNCTION ---
-def create_sample_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic=None):
-    """Create sample data for demonstration"""
-    topic = lesson_topic if lesson_topic else f"Introduction to {subject}"
+    row = sig_table.rows[0]
     
-    return {
-        "obj_1": f"Understand {subject} concepts",
-        "obj_2": f"Apply {subject} skills",
-        "obj_3": f"Appreciate the value of {subject}",
-        "topic": topic,
-        "integration_within": f"Related {subject} topics",
-        "integration_across": "Mathematics, Science",
-        "resources": {
-            "guide": "Teacher's Guide",
-            "materials": "Learner's Materials",
-            "textbook": f"{subject} Textbook",
-            "portal": "DepEd LR Portal",
-            "other": "Online resources"
-        },
-        "procedure": {
-            "review": "Review previous lesson",
-            "purpose_situation": "Real-world application",
-            "visual_prompt": "Classroom Learning",
-            "vocabulary": "Term1: Definition1\nTerm2: Definition2\nTerm3: Definition3\nTerm4: Definition4\nTerm5: Definition5",
-            "activity_main": "Group activity to explore the topic",
-            "explicitation": f"Detailed explanation of {subject} with examples. Example 1: Basic application. Example 2: Advanced application.",
-            "group_1": "Research task",
-            "group_2": "Problem-solving task",
-            "group_3": "Presentation task",
-            "generalization": "What did you learn? How can you apply this?"
-        },
-        "evaluation": {
-            "assess_q1": f"What is the main concept of {subject}?|A. Concept A|B. Concept B|C. Concept C|D. Concept D",
-            "assess_q2": f"How would you apply {subject} in real life?|A. Application A|B. Application B|C. Application C|D. Application D",
-            "assess_q3": f"Explain the difference between key terms in {subject}.|A. Difference A|B. Difference B|C. Difference C|D. Difference D",
-            "assess_q4": f"Solve a simple problem using {subject} concepts.|A. Solution A|B. Solution B|C. Solution C|D. Solution D",
-            "assess_q5": f"What are the limitations of {subject} approaches?|A. Limitation A|B. Limitation B|C. Limitation C|D. Limitation D",
-            "assignment": "Research more about the topic",
-            "remarks": "Lesson delivered successfully",
-            "reflection": "Students showed good understanding"
-        }
-    }
+    # LEFT COLUMN: TEACHER SIGNATURE
+    teacher_cell = row.cells[0]
+    
+    teacher_header_p = teacher_cell.add_paragraph()
+    teacher_header_run = teacher_header_p.add_run("Prepared by:")
+    teacher_header_run.bold = True
+    
+    teacher_cell.add_paragraph()
+    
+    teacher_name_p = teacher_cell.add_paragraph()
+    teacher_name_run = teacher_name_p.add_run(teacher_name)
+    teacher_name_run.bold = True
+    
+    teacher_position_p = teacher_cell.add_paragraph()
+    teacher_position_p.add_run("Teacher III")
+    
+    # RIGHT COLUMN: PRINCIPAL SIGNATURE
+    principal_cell = row.cells[1]
+    
+    principal_header_p = principal_cell.add_paragraph()
+    principal_header_run = principal_header_p.add_run("Noted by:")
+    principal_header_run.bold = True
+    
+    principal_cell.add_paragraph()
+    
+    principal_name_p = principal_cell.add_paragraph()
+    principal_name_run = principal_name_p.add_run(principal_name)
+    principal_name_run.bold = True
+    
+    principal_position_p = principal_cell.add_paragraph()
+    principal_position_p.add_run("Principal III")
 
-# --- 11. MAIN APPLICATION ---
+    # Save to BytesIO
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+# --- 9. STREAMLIT UI ---
 def main():
-    # Add API settings to sidebar
-    add_api_settings()
+    # Initialize session state for instructions
+    if 'show_instructions' not in st.session_state:
+        st.session_state.show_instructions = False
+    if 'api_key' not in st.session_state:
+        st.session_state.api_key = ""
     
-    # Add custom header
+    # Show instructions page if requested
+    if st.session_state.show_instructions:
+        show_api_key_instructions_page()
+        return
+    
+    # Add custom header with maroon background (NO LOGOS)
     add_custom_header()
     
-    # Main form for lesson plan generation
-    with st.form("lesson_form"):
-        st.subheader("📝 Lesson Plan Details")
+    # App Title - IN ONE LINE with custom styling
+    st.markdown('<p class="app-title">Daily Lesson Plan (DLP) Generator</p>', unsafe_allow_html=True)
+    
+    # Get API key from user
+    api_key = show_api_key_instructions()
+    
+    # Show warning if no API key
+    if not api_key:
+        st.warning("""
+        ⚠️ **API Key Required**
         
-        col1, col2, col3 = st.columns(3)
+        To use this DLP Generator, you need to:
+        1. Get a **FREE** Google Gemini API Key
+        2. Enter it in the sidebar
+        3. Click "Generate DLP" when ready
+        
+        Click the **"📋 How to Get Free API Key"** button in the sidebar for step-by-step instructions.
+        """)
+    
+    with st.sidebar:
+        st.header("📋 User Information")
+        
+        # Set default names to the required values
+        teacher_name = st.text_input("Teacher Name", value="RICHARD P. SAMORANOS")
+        principal_name = st.text_input("Principal Name", value="ROSALITA A. ESTROPIA")
+        
+        st.markdown("---")
+        st.info("Upload an image (optional) for the lesson")
+        uploaded_image = st.file_uploader("Choose an image for lesson", type=['png', 'jpg', 'jpeg'], key="lesson")
+        
+        # Quick access to get API key
+        st.markdown("---")
+        st.markdown("**Quick Links:**")
+        col1, col2 = st.columns(2)
         with col1:
-            subject = st.selectbox("Subject Area", 
-                                 ["Mathematics", "Science", "English", "Filipino", "Araling Panlipunan", 
-                                  "MAPEH", "ESP", "TLE", "Research", "Statistics"])
+            if st.button("🔑 Get API Key", use_container_width=True):
+                st.session_state.show_instructions = True
+                st.rerun()
         with col2:
-            grade = st.selectbox("Grade Level", ["7", "8", "9", "10", "11", "12"])
-        with col3:
-            quarter = st.selectbox("Quarter", ["1", "2", "3", "4"])
+            if st.button("📺 Tutorial Video", use_container_width=True):
+                st.markdown("[Watch Video Tutorial](https://www.youtube.com/results?search_query=how+to+get+google+gemini+api+key)")
+    
+    # Form Inputs
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        subject = st.text_input("Subject Area", placeholder="e.g., Mathematics")
+    
+    with col2:
+        # Grade Level Dropdown - Kinder to Grade 12
+        grade_options = [
+            "Kinder",
+            "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+            "Grade 7", "Grade 8", "Grade 9", "Grade 10",
+            "Grade 11", "Grade 12"
+        ]
+        grade = st.selectbox("Grade Level", grade_options, index=6)  # Default to Grade 7
+    
+    with col3:
+        # Quarter Dropdown - Roman Numerals
+        quarter_options = ["I", "II", "III", "IV"]
+        quarter = st.selectbox("Quarter", quarter_options, index=2)  # Default to Quarter III
+    
+    content_std = st.text_area("Content Standard", placeholder="The learner demonstrates understanding of...")
+    perf_std = st.text_area("Performance Standard", placeholder="The learner is able to...")
+    competency = st.text_area("Learning Competency", placeholder="Competency code and description...")
+    
+    st.markdown("---")
+    
+    # --- OPTIONAL: LESSON CONTENT/TOPIC SECTION ---
+    with st.expander("📚 Optional: Lesson Content / Topic", expanded=False):
+        st.info("Enter the specific topic or content for this lesson. Leave blank if you want AI to generate it.")
         
-        content_std = st.text_area("Content Standard", 
-                                 placeholder="The learner demonstrates understanding of...")
-        perf_std = st.text_area("Performance Standard", 
-                              placeholder="The learner is able to...")
-        competency = st.text_area("Learning Competency", 
-                                placeholder="E.g., Differentiates between...")
-        
-        # Optional custom objectives
-        with st.expander("➕ Custom Objectives (Optional)"):
-            col_obj1, col_obj2, col_obj3 = st.columns(3)
-            with col_obj1:
-                obj_cognitive = st.text_input("Cognitive", 
-                                            placeholder="E.g., Analyze the concept of...")
-            with col_obj2:
-                obj_psychomotor = st.text_input("Psychomotor", 
-                                              placeholder="E.g., Create a model showing...")
-            with col_obj3:
-                obj_affective = st.text_input("Affective", 
-                                            placeholder="E.g., Appreciate the importance of...")
-        
-        lesson_topic = st.text_input("Lesson Topic (Optional)", 
-                                   placeholder="E.g., Photosynthesis, Quadratic Equations...")
-        
-        # Teacher and Principal names
-        col_teacher, col_principal = st.columns(2)
-        with col_teacher:
-            teacher_name = st.text_input("Teacher's Name", value="")
-        with col_principal:
-            principal_name = st.text_input("Principal's Name", value="")
-        
-        # Image upload
-        uploaded_image = st.file_uploader("Upload Lesson Image (Optional)", 
-                                        type=['png', 'jpg', 'jpeg'])
-        
-        # Generate button
-        if st.session_state.api_key:
-            btn_text = "🤖 Generate AI Lesson Plan"
-            btn_help = "Uses Google Gemini AI with your API key"
-        else:
-            btn_text = "👁️ View Sample Lesson Plan"
-            btn_help = "Shows sample plan without API key"
-        
-        generate_btn = st.form_submit_button(
-            btn_text,
-            help=btn_help,
-            type="primary",
-            use_container_width=True
+        lesson_topic = st.text_area(
+            "Lesson Content / Topic",
+            placeholder="e.g., Introduction to Quadratic Equations: Solving ax^2 + bx + c = 0\nOr leave blank for AI to generate",
+            height=120,
+            help="Optional: The main content or topic that will be taught in this lesson. Include specific concepts, formulas, or key points."
         )
     
-    # Handle form submission
-    if generate_btn:
-        with st.spinner("🔄 Generating your lesson plan..."):
-            # Prepare inputs
+    st.markdown("---")
+    
+    # --- OPTIONAL: LESSON OBJECTIVES SECTION ---
+    with st.expander("📝 Optional: Lesson Objectives", expanded=False):
+        st.info("If you already have your lesson objectives, enter them below. Otherwise, leave blank and AI will generate them.")
+        
+        col_obj1, col_obj2, col_obj3 = st.columns(3)
+        
+        with col_obj1:
+            obj_cognitive = st.text_area(
+                "Cognitive Objective",
+                placeholder="e.g., Identify the parts of a cell\n(Leave blank for AI)",
+                height=100,
+                help="What students should know or understand"
+            )
+        
+        with col_obj2:
+            obj_psychomotor = st.text_area(
+                "Psychomotor Objective",
+                placeholder="e.g., Draw and label the parts of a cell\n(Leave blank for AI)",
+                height=100,
+                help="What students should be able to do"
+            )
+        
+        with col_obj3:
+            obj_affective = st.text_area(
+                "Affective Objective",
+                placeholder="e.g., Appreciate the complexity of living organisms\n(Leave blank for AI)",
+                height=100,
+                help="Values, attitudes, or emotions to develop"
+            )
+    
+    st.markdown("---")
+    
+    # Generate Button
+    if st.button("🚀 Generate DLP", type="primary", use_container_width=True, disabled=not api_key):
+        if not api_key:
+            st.error("❌ Please enter your Google Gemini API Key in the sidebar first!")
+            return
+            
+        if not all([subject, grade, quarter, content_std, perf_std, competency]):
+            st.error("Please fill all required fields")
+            return
+        
+        # Check if user provided content (all optional)
+        user_provided_topic = lesson_topic and lesson_topic.strip()
+        user_provided_objectives = obj_cognitive and obj_psychomotor and obj_affective
+        
+        # Show what user is providing
+        provided_items = []
+        if user_provided_topic:
+            provided_items.append("topic")
+        if user_provided_objectives:
+            provided_items.append("objectives")
+        
+        if provided_items:
+            st.info(f"✅ Using your provided: {', '.join(provided_items)}")
+            st.info("🔧 AI will generate the remaining content")
+        else:
+            st.info("🔧 AI will generate all lesson content for you")
+        
+        with st.spinner("🤖 Generating lesson content..."):
+            ai_data = generate_lesson_content(
+                subject, grade, quarter, 
+                content_std, perf_std, competency,
+                obj_cognitive if obj_cognitive else None,
+                obj_psychomotor if obj_psychomotor else None,
+                obj_affective if obj_affective else None,
+                lesson_topic if user_provided_topic else None
+            )
+            
+        if ai_data:
+            st.success("✅ AI content generated successfully!")
+            
+            # Show topic preview
+            st.subheader("📚 Generated Lesson Content")
+            col_topic, col_integration = st.columns(2)
+            
+            with col_topic:
+                st.info("**Main Topic**")
+                st.write(ai_data.get('topic', 'N/A'))
+            
+            with col_integration:
+                st.info("**Integration**")
+                st.write(f"Within Subject: {ai_data.get('integration_within', 'N/A')}")
+                st.write(f"Across Subjects: {ai_data.get('integration_across', 'N/A')}")
+            
+            # Show objectives preview
+            st.subheader("📋 Generated Objectives")
+            col_obj_pre1, col_obj_pre2, col_obj_pre3 = st.columns(3)
+            
+            with col_obj_pre1:
+                st.info("**Cognitive**")
+                st.write(ai_data.get('obj_1', 'N/A'))
+            
+            with col_obj_pre2:
+                st.info("**Psychomotor**")
+                st.write(ai_data.get('obj_2', 'N/A'))
+            
+            with col_obj_pre3:
+                st.info("**Affective**")
+                st.write(ai_data.get('obj_3', 'N/A'))
+            
+            # Show assessment preview
+            with st.expander("📝 Preview Assessment Questions"):
+                for i in range(1, 6):
+                    question_key = f'assess_q{i}'
+                    raw_question = ai_data.get('evaluation', {}).get(question_key, '')
+                    if raw_question:
+                        question_text, choices = parse_multiple_choice_question(raw_question)
+                        st.markdown(f"**Question {i}:** {question_text}")
+                        if choices:
+                            for choice in choices:
+                                st.write(f"  {choice}")
+                        st.markdown("---")
+            
+            # Full preview
+            with st.expander("📄 Preview All Generated Content"):
+                st.json(ai_data)
+            
+            # Create DOCX
             inputs = {
                 'subject': subject,
                 'grade': grade,
@@ -873,83 +1174,23 @@ def main():
                 'competency': competency
             }
             
-            # Generate lesson content
-            ai_data = generate_lesson_content(
-                subject, grade, quarter, content_std, perf_std, competency,
-                obj_cognitive, obj_psychomotor, obj_affective, lesson_topic
-            )
+            with st.spinner("📄 Creating DOCX file..."):
+                docx_buffer = create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image)
             
-            if ai_data:
-                st.session_state.ai_data = ai_data
-                st.session_state.generated = True
-                st.session_state.inputs = inputs
-                st.session_state.teacher_name = teacher_name
-                st.session_state.principal_name = principal_name
-                st.session_state.uploaded_image = uploaded_image
-                
-                if st.session_state.api_key:
-                    st.success("✅ AI Lesson Plan Generated Successfully!")
-                else:
-                    st.success("✅ Sample Lesson Plan Generated!")
-    
-    # Display generated lesson plan
-    if st.session_state.get('generated') and st.session_state.get('ai_data'):
-        st.divider()
-        st.subheader("📄 Generated Lesson Plan")
-        
-        # Display preview
-        with st.expander("📋 Preview Lesson Plan", expanded=True):
-            ai_data = st.session_state.ai_data
-            
-            # Display in columns
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**📚 Objectives:**")
-                st.write(f"1. {ai_data.get('obj_1', 'N/A')}")
-                st.write(f"2. {ai_data.get('obj_2', 'N/A')}")
-                st.write(f"3. {ai_data.get('obj_3', 'N/A')}")
-                
-                st.markdown("**🎯 Topic:**")
-                st.write(ai_data.get('topic', 'N/A'))
-                
-                st.markdown("**🔗 Integration:**")
-                st.write(f"**Within:** {ai_data.get('integration_within', 'N/A')}")
-                st.write(f"**Across:** {ai_data.get('integration_across', 'N/A')}")
-            
-            with col2:
-                st.markdown("**📖 Resources:**")
-                resources = ai_data.get('resources', {})
-                st.write(f"• Teacher Guide: {resources.get('guide', 'N/A')}")
-                st.write(f"• Learner Materials: {resources.get('materials', 'N/A')}")
-                st.write(f"• Textbook: {resources.get('textbook', 'N/A')}")
-                st.write(f"• LR Portal: {resources.get('portal', 'N/A')}")
-                st.write(f"• Other: {resources.get('other', 'N/A')}")
-        
-        # Download button for DOCX
-        if st.session_state.get('inputs'):
-            docx_file = create_docx(
-                st.session_state.inputs,
-                st.session_state.ai_data,
-                st.session_state.teacher_name,
-                st.session_state.principal_name,
-                st.session_state.uploaded_image
-            )
-            
+            # Download button
             st.download_button(
-                label="📥 Download as DOCX",
-                data=docx_file,
-                file_name=f"Lesson_Plan_{subject}_Grade{grade}_Q{quarter}.docx",
+                label="📥 Download DLP (.docx)",
+                data=docx_buffer,
+                file_name=f"DLP_{subject}_{grade}_Q{quarter}_{date.today()}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
-        
-        # Clear button
-        if st.button("🗑️ Clear Current Plan", type="secondary", use_container_width=True):
-            st.session_state.generated = False
-            st.session_state.ai_data = None
-            st.rerun()
+            
+            # Display success message
+            st.balloons()
+            st.success(f"✅ DLP generated for {subject} - {grade} - Quarter {quarter}")
+        else:
+            st.error("Failed to generate AI content. Please try again.")
 
-# --- 12. RUN THE APPLICATION ---
 if __name__ == "__main__":
     main()
