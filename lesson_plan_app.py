@@ -18,11 +18,7 @@ from docx.oxml import parse_xml
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="DLP Generator", layout="centered")
 
-# --- 2. API KEY MANAGEMENT ---
-# Remove the embedded API key and use user-provided key
-EMBEDDED_API_KEY = ""  # Empty now - users will provide their own
-
-# --- 3. SIMPLIFIED HEADER WITHOUT LOGOS ---
+# --- 2. SIMPLIFIED HEADER WITHOUT LOGOS ---
 def add_custom_header():
     """Add custom header with maroon background (NO LOGOS)"""
     
@@ -76,42 +72,6 @@ def add_custom_header():
         border-bottom: 3px solid #800000;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
-    
-    /* API Key Instructions Styling */
-    .api-instructions {
-        background-color: #f8f9fa;
-        border-left: 4px solid #800000;
-        padding: 15px;
-        margin: 10px 0;
-        border-radius: 5px;
-    }
-    .api-step {
-        margin: 8px 0;
-    }
-    .step-number {
-        background-color: #800000;
-        color: white;
-        border-radius: 50%;
-        width: 25px;
-        height: 25px;
-        display: inline-block;
-        text-align: center;
-        margin-right: 10px;
-        font-weight: bold;
-    }
-    .get-key-button {
-        background-color: #4285F4;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        text-decoration: none;
-        display: inline-block;
-        margin: 10px 0;
-        font-weight: bold;
-    }
-    .get-key-button:hover {
-        background-color: #3367D6;
-    }
     </style>
     
     <div class="header-container">
@@ -122,9 +82,9 @@ def add_custom_header():
     </div>
     """, unsafe_allow_html=True)
 
-# --- 4. API KEY SETTINGS PAGE ---
+# --- 3. API KEY SETTINGS ---
 def show_api_key_instructions():
-    """Show instructions for getting Google Gemini API Key"""
+    """Show API key input in sidebar"""
     
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔑 API Key Settings")
@@ -158,72 +118,57 @@ def show_api_key_instructions():
     return api_key
 
 def show_api_key_instructions_page():
-    """Show detailed instructions for getting API key"""
+    """Show SIMPLE instructions for getting API key"""
     
-    st.title("📋 How to Get Your Free Google Gemini API Key")
+    st.title("FREE API Key Instructions")
     
-    st.markdown("""
-    <div class="api-instructions">
-        <h3>Follow these simple steps:</h3>
-        
-        <div class="api-step">
-            <span class="step-number">1</span> <strong>Go to Google AI Studio</strong>
-        </div>
-        
-        <div class="api-step">
-            <span class="step-number">2</span> <strong>Sign in with your Google Account</strong>
-        </div>
-        
-        <div class="api-step">
-            <span class="step-number">3</span> <strong>Click on "Get API Key" button</strong>
-        </div>
-        
-        <div class="api-step">
-            <span class="step-number">4</span> <strong>Create a new API key</strong>
-        </div>
-        
-        <div class="api-step">
-            <span class="step-number">5</span> <strong>Copy the generated API key</strong>
-        </div>
-        
-        <div class="api-step">
-            <span class="step-number">6</span> <strong>Paste it in the sidebar of this app</strong>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Button to get API key
-    st.markdown("""
-    <a href="https://aistudio.google.com/apikey" target="_blank" class="get-key-button">
-        🔑 Get Your Free API Key Now
-    </a>
-    """, unsafe_allow_html=True)
-    
-    # Important notes
-    st.markdown("---")
-    st.info("""
-    **Important Notes:**
-    - The API key is **FREE** for limited usage (up to 60 requests per minute)
-    - You need a Google account (Gmail) to get the key
-    - Your API key is stored only in your browser session (not saved on our servers)
-    - The key starts with "AIzaSy" followed by 39 characters
+    st.write("""
+    HOW TO GET YOUR FREE GOOGLE GEMINI API KEY:
+
+    1. OPEN THIS LINK: https://aistudio.google.com/apikey
+
+    2. SIGN IN with your Google account (Gmail)
+
+    3. CLICK "Get API Key" button
+
+    4. CLICK "Create API Key"
+
+    5. COPY the key that appears
+       (It looks like: AIzaSyABCDEFGHIJKLMNOPQRSTUVWXYZ123456)
+
+    6. GO BACK to this app
+
+    7. PASTE the key in the sidebar where it says 
+       "Enter your Google Gemini API Key"
+
+    ---
+
+    IMPORTANT NOTES:
+    • This is 100% FREE
+    • No payment needed
+    • Takes only 2 minutes
+    • Your key is private - don't share it
+
+    ---
+
+    NEED HELP?
+    • Make sure you're signed in to Google
+    • Copy the ENTIRE key (starts with AIzaSy)
+    • No spaces before or after the key
     """)
     
-    # Video tutorial link
-    st.markdown("---")
-    st.subheader("🎥 Video Tutorial")
-    st.markdown("""
-    Watch this video tutorial if you need visual guidance:
-    
-    [How to Get Google Gemini API Key - YouTube Tutorial](https://www.youtube.com/results?search_query=how+to+get+google+gemini+api+key)
-    """)
+    # Simple button to open link
+    if st.button("OPEN GOOGLE AI STUDIO"):
+        js = "window.open('https://aistudio.google.com/apikey')"
+        st.components.v1.html(f"<script>{js}</script>", height=0)
     
     # Back button
-    if st.button("← Back to DLP Generator"):
+    st.markdown("---")
+    if st.button("BACK"):
         st.session_state.show_instructions = False
         st.rerun()
 
-# --- 5. AI GENERATOR (UPDATED TO USE USER API KEY) ---
+# --- 4. AI GENERATOR (USES USER API KEY) ---
 def clean_json_string(json_string):
     """Clean the JSON string by removing invalid characters and fixing common issues"""
     if not json_string:
@@ -544,7 +489,7 @@ def create_fallback_data(subject, grade, quarter, content_std, perf_std, compete
         }
     }
 
-# --- 6. IMAGE FETCHER ---
+# --- 5. IMAGE FETCHER ---
 def fetch_ai_image(keywords):
     if not keywords: keywords = "school_classroom"
     clean_prompt = re.sub(r'[\n\r\t]', ' ', str(keywords))
@@ -564,7 +509,7 @@ def fetch_ai_image(keywords):
         return None
     return None
 
-# --- 7. DOCX HELPERS ---
+# --- 6. DOCX HELPERS ---
 def set_cell_background(cell, color_hex):
     """Sets the background color of a table cell."""
     shading_elm = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), color_hex))
@@ -751,7 +696,7 @@ def add_assessment_row(table, label, eval_sec):
         if i < 5:
             content_cell.add_paragraph()
 
-# --- 8. DOCX CREATOR ---
+# --- 7. DOCX CREATOR ---
 def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     doc = Document()
     
@@ -949,9 +894,9 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     buffer.seek(0)
     return buffer
 
-# --- 9. STREAMLIT UI ---
+# --- 8. MAIN STREAMLIT APP ---
 def main():
-    # Initialize session state for instructions
+    # Initialize session state
     if 'show_instructions' not in st.session_state:
         st.session_state.show_instructions = False
     if 'api_key' not in st.session_state:
@@ -962,10 +907,10 @@ def main():
         show_api_key_instructions_page()
         return
     
-    # Add custom header with maroon background (NO LOGOS)
+    # Add custom header
     add_custom_header()
     
-    # App Title - IN ONE LINE with custom styling
+    # App Title
     st.markdown('<p class="app-title">Daily Lesson Plan (DLP) Generator</p>', unsafe_allow_html=True)
     
     # Get API key from user
@@ -981,13 +926,13 @@ def main():
         2. Enter it in the sidebar
         3. Click "Generate DLP" when ready
         
-        Click the **"📋 How to Get Free API Key"** button in the sidebar for step-by-step instructions.
+        Click the **"📋 How to Get Free API Key"** button in the sidebar for instructions.
         """)
     
     with st.sidebar:
         st.header("📋 User Information")
         
-        # Set default names to the required values
+        # Set default names
         teacher_name = st.text_input("Teacher Name", value="RICHARD P. SAMORANOS")
         principal_name = st.text_input("Principal Name", value="ROSALITA A. ESTROPIA")
         
@@ -997,15 +942,9 @@ def main():
         
         # Quick access to get API key
         st.markdown("---")
-        st.markdown("**Quick Links:**")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔑 Get API Key", use_container_width=True):
-                st.session_state.show_instructions = True
-                st.rerun()
-        with col2:
-            if st.button("📺 Tutorial Video", use_container_width=True):
-                st.markdown("[Watch Video Tutorial](https://www.youtube.com/results?search_query=how+to+get+google+gemini+api+key)")
+        if st.button("🔑 Get API Key Instructions", use_container_width=True):
+            st.session_state.show_instructions = True
+            st.rerun()
     
     # Form Inputs
     col1, col2, col3 = st.columns(3)
@@ -1013,19 +952,19 @@ def main():
         subject = st.text_input("Subject Area", placeholder="e.g., Mathematics")
     
     with col2:
-        # Grade Level Dropdown - Kinder to Grade 12
+        # Grade Level Dropdown
         grade_options = [
             "Kinder",
             "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
             "Grade 7", "Grade 8", "Grade 9", "Grade 10",
             "Grade 11", "Grade 12"
         ]
-        grade = st.selectbox("Grade Level", grade_options, index=6)  # Default to Grade 7
+        grade = st.selectbox("Grade Level", grade_options, index=6)
     
     with col3:
-        # Quarter Dropdown - Roman Numerals
+        # Quarter Dropdown
         quarter_options = ["I", "II", "III", "IV"]
-        quarter = st.selectbox("Quarter", quarter_options, index=2)  # Default to Quarter III
+        quarter = st.selectbox("Quarter", quarter_options, index=2)
     
     content_std = st.text_area("Content Standard", placeholder="The learner demonstrates understanding of...")
     perf_std = st.text_area("Performance Standard", placeholder="The learner is able to...")
@@ -1033,20 +972,19 @@ def main():
     
     st.markdown("---")
     
-    # --- OPTIONAL: LESSON CONTENT/TOPIC SECTION ---
+    # Optional: Lesson Content/Topic
     with st.expander("📚 Optional: Lesson Content / Topic", expanded=False):
         st.info("Enter the specific topic or content for this lesson. Leave blank if you want AI to generate it.")
         
         lesson_topic = st.text_area(
             "Lesson Content / Topic",
             placeholder="e.g., Introduction to Quadratic Equations: Solving ax^2 + bx + c = 0\nOr leave blank for AI to generate",
-            height=120,
-            help="Optional: The main content or topic that will be taught in this lesson. Include specific concepts, formulas, or key points."
+            height=120
         )
     
     st.markdown("---")
     
-    # --- OPTIONAL: LESSON OBJECTIVES SECTION ---
+    # Optional: Lesson Objectives
     with st.expander("📝 Optional: Lesson Objectives", expanded=False):
         st.info("If you already have your lesson objectives, enter them below. Otherwise, leave blank and AI will generate them.")
         
@@ -1056,24 +994,21 @@ def main():
             obj_cognitive = st.text_area(
                 "Cognitive Objective",
                 placeholder="e.g., Identify the parts of a cell\n(Leave blank for AI)",
-                height=100,
-                help="What students should know or understand"
+                height=100
             )
         
         with col_obj2:
             obj_psychomotor = st.text_area(
                 "Psychomotor Objective",
                 placeholder="e.g., Draw and label the parts of a cell\n(Leave blank for AI)",
-                height=100,
-                help="What students should be able to do"
+                height=100
             )
         
         with col_obj3:
             obj_affective = st.text_area(
                 "Affective Objective",
                 placeholder="e.g., Appreciate the complexity of living organisms\n(Leave blank for AI)",
-                height=100,
-                help="Values, attitudes, or emotions to develop"
+                height=100
             )
     
     st.markdown("---")
@@ -1088,11 +1023,11 @@ def main():
             st.error("Please fill all required fields")
             return
         
-        # Check if user provided content (all optional)
+        # Check user-provided content
         user_provided_topic = lesson_topic and lesson_topic.strip()
         user_provided_objectives = obj_cognitive and obj_psychomotor and obj_affective
         
-        # Show what user is providing
+        # Show user what's being used
         provided_items = []
         if user_provided_topic:
             provided_items.append("topic")
@@ -1186,7 +1121,7 @@ def main():
                 use_container_width=True
             )
             
-            # Display success message
+            # Success message
             st.balloons()
             st.success(f"✅ DLP generated for {subject} - {grade} - Quarter {quarter}")
         else:
