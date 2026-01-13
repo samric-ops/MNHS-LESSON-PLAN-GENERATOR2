@@ -7,6 +7,7 @@ import requests
 import urllib.parse
 import random
 import re
+import hashlib
 
 # --- NEW LIBRARY FOR WORD DOCS ---
 from docx import Document
@@ -82,38 +83,88 @@ def add_custom_header():
     </div>
     """, unsafe_allow_html=True)
 
-# --- 3. API KEY SETTINGS ---
-def show_api_key_instructions():
-    """Show API key input in sidebar"""
+# --- 3. API KEY MANAGER WITH REMEMBER FEATURE ---
+def save_api_key(api_key):
+    """Save API key to session state and optionally to browser storage"""
+    if api_key:
+        st.session_state.api_key = api_key
+        # Also save to Streamlit's session state for persistence
+        st.session_state.saved_api_key = api_key
+        return True
+    return False
+
+def load_saved_api_key():
+    """Load saved API key from session state"""
+    return st.session_state.get('saved_api_key', '')
+
+def show_api_key_settings():
+    """Show API key input in sidebar with remember feature"""
     
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔑 API Key Settings")
     
-    # Check if API key exists in session state
-    if 'api_key' not in st.session_state:
-        st.session_state.api_key = ""
+    # Load saved API key if exists
+    if 'saved_api_key' not in st.session_state:
+        st.session_state.saved_api_key = ""
+    
+    # Check if we have a saved key
+    saved_key = load_saved_api_key()
+    
+    # Create a unique key for the text input
+    input_key = f"api_key_input_{hashlib.md5(saved_key.encode() if saved_key else ''.encode()).hexdigest()[:8]}"
     
     # Get API key from user
     api_key = st.sidebar.text_input(
         "Enter your Google Gemini API Key:",
         type="password",
         placeholder="AIzaSy...",
-        value=st.session_state.api_key,
+        value=saved_key,  # Pre-fill with saved key
+        key=input_key,
         help="Enter your free API key from Google AI Studio"
     )
     
-    # Save to session state
-    st.session_state.api_key = api_key
+    # Remember me checkbox
+    remember_me = st.sidebar.checkbox(
+        "Remember my API key", 
+        value=bool(saved_key),
+        help="Your API key will be saved in your browser"
+    )
+    
+    # Save button
+    if st.sidebar.button("💾 Save API Key", use_container_width=True):
+        if api_key:
+            if save_api_key(api_key):
+                st.sidebar.success("✅ API Key Saved!")
+                if remember_me:
+                    st.sidebar.info("🔒 Key saved in your browser")
+                else:
+                    st.sidebar.warning("⚠️ Key saved for this session only")
+            else:
+                st.sidebar.error("❌ Failed to save API key")
+        else:
+            st.sidebar.warning("⚠️ Please enter an API key")
+    
+    # Clear button
+    if saved_key:
+        if st.sidebar.button("🗑️ Clear Saved Key", use_container_width=True):
+            st.session_state.saved_api_key = ""
+            st.session_state.api_key = ""
+            st.sidebar.success("✅ API Key Cleared!")
+            st.rerun()
     
     # Show instructions button
-    if st.sidebar.button("📋 How to Get Free API Key"):
+    if st.sidebar.button("📋 How to Get Free API Key", use_container_width=True):
         st.session_state.show_instructions = True
     
     # Show status
-    if st.session_state.api_key:
-        st.sidebar.success("✅ API Key Saved")
+    if st.session_state.get('api_key'):
+        st.sidebar.success("✅ API Key Ready")
     else:
         st.sidebar.warning("⚠️ API Key Required")
+    
+    # Auto-save if remember me is checked and key is entered
+    if api_key and remember_me and api_key != saved_key:
+        save_api_key(api_key)
     
     return api_key
 
@@ -141,6 +192,8 @@ def show_api_key_instructions_page():
     7. PASTE the key in the sidebar where it says 
        "Enter your Google Gemini API Key"
 
+    8. CHECK "Remember my API key" so you don't need to enter it again
+
     ---
 
     IMPORTANT NOTES:
@@ -158,13 +211,20 @@ def show_api_key_instructions_page():
     """)
     
     # Simple button to open link
-    if st.button("OPEN GOOGLE AI STUDIO"):
-        js = "window.open('https://aistudio.google.com/apikey')"
-        st.components.v1.html(f"<script>{js}</script>", height=0)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔗 OPEN GOOGLE AI STUDIO", use_container_width=True):
+            js = "window.open('https://aistudio.google.com/apikey')"
+            st.components.v1.html(f"<script>{js}</script>", height=0)
+    
+    with col2:
+        if st.button("🎥 WATCH TUTORIAL", use_container_width=True):
+            js = "window.open('https://www.youtube.com/results?search_query=how+to+get+google+gemini+api+key')"
+            st.components.v1.html(f"<script>{js}</script>", height=0)
     
     # Back button
     st.markdown("---")
-    if st.button("BACK"):
+    if st.button("← BACK TO DLP GENERATOR", use_container_width=True):
         st.session_state.show_instructions = False
         st.rerun()
 
@@ -229,13 +289,15 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
                            lesson_topic=None):
     try:
         # Check if API key is provided
-        if not st.session_state.get('api_key'):
+        current_api_key = st.session_state.get('api_key') or st.session_state.get('saved_api_key')
+        
+        if not current_api_key:
             st.error("❌ Please enter your Google Gemini API Key in the sidebar")
             st.info("Click on '📋 How to Get Free API Key' button in sidebar for instructions")
             return None
         
         # Use the user's API key
-        genai.configure(api_key=st.session_state.api_key)
+        genai.configure(api_key=current_api_key)
         
         # Try multiple model options
         model_options = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro']
@@ -899,8 +961,10 @@ def main():
     # Initialize session state
     if 'show_instructions' not in st.session_state:
         st.session_state.show_instructions = False
+    if 'saved_api_key' not in st.session_state:
+        st.session_state.saved_api_key = ""
     if 'api_key' not in st.session_state:
-        st.session_state.api_key = ""
+        st.session_state.api_key = st.session_state.saved_api_key
     
     # Show instructions page if requested
     if st.session_state.show_instructions:
@@ -913,8 +977,17 @@ def main():
     # App Title
     st.markdown('<p class="app-title">Daily Lesson Plan (DLP) Generator</p>', unsafe_allow_html=True)
     
-    # Get API key from user
-    api_key = show_api_key_instructions()
+    # Get API key from user with remember feature
+    api_key = show_api_key_settings()
+    
+    # Use saved key if no current input
+    if not api_key and st.session_state.saved_api_key:
+        api_key = st.session_state.saved_api_key
+        st.session_state.api_key = api_key
+    
+    # Show welcome message if key is already saved
+    if st.session_state.saved_api_key and not st.session_state.show_instructions:
+        st.sidebar.info("✅ Your API key is saved! Ready to generate DLP.")
     
     # Show warning if no API key
     if not api_key:
@@ -924,7 +997,8 @@ def main():
         To use this DLP Generator, you need to:
         1. Get a **FREE** Google Gemini API Key
         2. Enter it in the sidebar
-        3. Click "Generate DLP" when ready
+        3. Click "Save API Key" button
+        4. Check "Remember my API key" so you don't need to enter it again
         
         Click the **"📋 How to Get Free API Key"** button in the sidebar for instructions.
         """)
@@ -940,11 +1014,11 @@ def main():
         st.info("Upload an image (optional) for the lesson")
         uploaded_image = st.file_uploader("Choose an image for lesson", type=['png', 'jpg', 'jpeg'], key="lesson")
         
-        # Quick access to get API key
-        st.markdown("---")
-        if st.button("🔑 Get API Key Instructions", use_container_width=True):
-            st.session_state.show_instructions = True
-            st.rerun()
+        # Show saved key status
+        if st.session_state.saved_api_key:
+            st.markdown("---")
+            st.success("🔑 API Key Status: SAVED")
+            st.caption("Your key is saved for future use")
     
     # Form Inputs
     col1, col2, col3 = st.columns(3)
@@ -1013,10 +1087,13 @@ def main():
     
     st.markdown("---")
     
+    # Check if we have API key (either current or saved)
+    has_api_key = bool(api_key or st.session_state.saved_api_key or st.session_state.get('api_key'))
+    
     # Generate Button
-    if st.button("🚀 Generate DLP", type="primary", use_container_width=True, disabled=not api_key):
-        if not api_key:
-            st.error("❌ Please enter your Google Gemini API Key in the sidebar first!")
+    if st.button("🚀 Generate DLP", type="primary", use_container_width=True, disabled=not has_api_key):
+        if not has_api_key:
+            st.error("❌ Please enter and save your Google Gemini API Key in the sidebar first!")
             return
             
         if not all([subject, grade, quarter, content_std, perf_std, competency]):
@@ -1124,6 +1201,10 @@ def main():
             # Success message
             st.balloons()
             st.success(f"✅ DLP generated for {subject} - {grade} - Quarter {quarter}")
+            
+            # Reminder about saved API key
+            if st.session_state.saved_api_key:
+                st.info("💡 Your API key is saved. You can use the app again without re-entering it!")
         else:
             st.error("Failed to generate AI content. Please try again.")
 
