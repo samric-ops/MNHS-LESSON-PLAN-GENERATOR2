@@ -83,81 +83,122 @@ def add_custom_header():
     </div>
     """, unsafe_allow_html=True)
 
-# --- 3. LANGUAGE DETECTION HELPER ---
-def detect_language(text):
-    """Detect if text is primarily in Filipino/Tagalog or English"""
-    if not text:
+# --- 3. IMPROVED LANGUAGE DETECTION HELPER ---
+def detect_language_simple(text):
+    """Simple but accurate language detection - returns 'english' or 'filipino'"""
+    if not text or not isinstance(text, str):
         return "english"  # Default to English
     
-    text_lower = text.lower()
+    text_lower = text.lower().strip()
     
-    # Common Filipino/Tagalog words
-    filipino_words = [
-        'ang', 'ng', 'sa', 'mga', 'at', 'ay', 'si', 'ni', 'kay', 'para', 'ngayon',
-        'ito', 'iyan', 'iyon', 'dito', 'doon', 'may', 'meron', 'wala', 'hindi',
-        'oo', 'bakit', 'paano', 'sino', 'ano', 'alin', 'kailan', 'saan', 'magkano',
-        'ako', 'ikaw', 'siya', 'kami', 'tayo', 'kayo', 'sila', 'atin', 'amin',
-        'inyo', 'kanila', 'natin', 'namin', 'ninyo', 'nila', 'ko', 'mo', 'niya',
-        'namin', 'ninyo', 'nila', 'aking', 'iyong', 'kanyang', 'aming', 'inyong',
-        'kanilang', 'bilang', 'kung', 'kapag', 'dahil', 'pero', 'subalit', 'dapat',
-        'pwede', 'puwede', 'gusto', 'nais', 'kailangan'
+    # Very common Filipino/Tagalog words that are NOT common in English academic writing
+    strong_filipino_indicators = [
+        # Pronouns and particles
+        'ang', 'ng', 'sa', 'mga', 'si', 'ni', 'kay', 'sina', 'nina', 'kina',
+        # Common verbs
+        'ay', 'may', 'meron', 'wala', 'hindi', 'oo', 'gusto', 'nais', 'kailangan',
+        # Question words
+        'bakit', 'paano', 'sino', 'ano', 'alin', 'kailan', 'saan', 'magkano',
+        # Common classroom Filipino
+        'mag-aaral', 'guro', 'aralin', 'paksa', 'talakayan', 'gawain', 'takdang-aralin',
+        'pagsusulit', 'pagtataya', 'pagpapahalaga', 'kasanayan', 'kompetensi',
+        'naipapamalas', 'nakagagawa', 'nakapagpapakita', 'nakapag-uugnay',
+        # Common Filipino in DepEd standards
+        'pag-unawa', 'pagganap', 'pagpapahalaga', 'pagsasagawa', 'pagpapakita'
     ]
     
-    # Common English words
-    english_words = [
-        'the', 'and', 'to', 'of', 'a', 'in', 'is', 'that', 'for', 'it', 'with',
-        'as', 'on', 'be', 'at', 'by', 'this', 'have', 'from', 'or', 'one', 'had',
-        'by', 'word', 'but', 'not', 'what', 'all', 'were', 'when', 'we', 'there',
-        'can', 'an', 'your', 'which', 'their', 'said', 'if', 'will', 'each', 'about',
-        'how', 'up', 'out', 'them', 'then', 'she', 'many', 'some', 'so', 'these',
-        'would', 'into', 'has', 'more', 'her', 'two', 'like', 'him', 'see', 'time',
-        'could', 'no', 'make', 'than', 'first', 'been', 'its', 'who', 'now', 'people',
-        'my', 'made', 'over', 'did', 'down', 'only', 'way', 'find', 'use', 'may',
-        'water', 'long', 'little', 'very', 'after', 'words', 'called', 'just', 'where',
-        'most', 'know', 'get', 'through', 'back', 'much', 'before', 'good', 'man',
-        'our', 'me', 'year'
+    # Check if any strong Filipino indicators are present
+    for word in strong_filipino_indicators:
+        if f' {word} ' in f' {text_lower} ':
+            return "filipino"
+    
+    # Additional check for common Filipino sentence patterns
+    filipino_patterns = [
+        r'\bang\b.*\bng\b',  # "ang" followed by "ng"
+        r'\bnak\w+',  # Words starting with "nak" (nakapag, nakagagawa, etc.)
+        r'\bnaipapamalas\b',  # Common DepEd Filipino term
+        r'\bnakagagawa\b',    # Common DepEd Filipino term
+        r'\bpag-\w+\b',       # Words starting with "pag-" (pag-unawa, etc.)
     ]
     
-    # Count occurrences
-    filipino_count = 0
-    english_count = 0
+    for pattern in filipino_patterns:
+        if re.search(pattern, text_lower):
+            return "filipino"
     
-    words = re.findall(r'\b\w+\b', text_lower)
+    # Count basic Filipino vs English words
+    basic_filipino_words = ['ang', 'ng', 'sa', 'mga', 'ay', 'si', 'ni', 'kay', 'para']
+    basic_english_words = ['the', 'and', 'to', 'of', 'a', 'in', 'is', 'that', 'for']
     
-    for word in words:
-        if word in filipino_words:
-            filipino_count += 1
-        if word in english_words:
-            english_count += 1
+    filipino_count = sum(1 for word in basic_filipino_words if f' {word} ' in f' {text_lower} ')
+    english_count = sum(1 for word in basic_english_words if f' {word} ' in f' {text_lower} ')
     
-    # Determine language
-    total_detected = filipino_count + english_count
-    if total_detected > 0:
-        filipino_ratio = filipino_count / total_detected
-        if filipino_ratio > 0.3:  # If more than 30% Filipino words detected
+    if filipino_count > english_count and filipino_count > 0:
+        return "filipino"
+    
+    # Default to English
+    return "english"
+
+def analyze_language_from_inputs(content_std, perf_std, competency, obj_cognitive=None, obj_psychomotor=None, obj_affective=None, lesson_topic=None):
+    """Analyze language from all teacher inputs"""
+    
+    # Combine all inputs for analysis
+    all_inputs = []
+    if content_std:
+        all_inputs.append(content_std)
+    if perf_std:
+        all_inputs.append(perf_std)
+    if competency:
+        all_inputs.append(competency)
+    if obj_cognitive:
+        all_inputs.append(obj_cognitive)
+    if obj_psychomotor:
+        all_inputs.append(obj_psychomotor)
+    if obj_affective:
+        all_inputs.append(obj_affective)
+    if lesson_topic:
+        all_inputs.append(lesson_topic)
+    
+    if not all_inputs:
+        return "english"  # Default
+    
+    # Check each input
+    languages_found = []
+    for text in all_inputs:
+        if text and text.strip():
+            lang = detect_language_simple(text)
+            languages_found.append(lang)
+    
+    # If majority are Filipino, use Filipino
+    if languages_found:
+        filipino_count = languages_found.count("filipino")
+        total = len(languages_found)
+        if filipino_count > 0 and (filipino_count / total) >= 0.5:  # 50% or more
             return "filipino"
     
     return "english"
 
-def get_language_based_prompt(language, additional_context=""):
-    """Get language-specific prompt instructions"""
+def get_language_instruction(language):
+    """Get strict language instruction for AI"""
     
     if language == "filipino":
-        return f"""
-        IMPORTANT LANGUAGE INSTRUCTION: Gamitin ang MIXED TAGALOG/ENGLISH sa pagsagot batay sa konteksto.
-        - Para sa mga teknikal na termino at konsepto, gumamit ng Ingles
-        - Para sa mga paliwanag at aktibidad, gumamit ng Tagalog o Taglish
-        - Gumamit ng natural at conversational na Filipino-English mix gaya ng ginagamit sa tunay na mga silid-aralan sa Pilipinas
-        - Ang mga tanong sa assessment ay dapat nasa parehong wika na ginamit ng guro
-        {additional_context}
+        return """
+        STRICT LANGUAGE INSTRUCTION: 
+        - Gamitin ang PURONG FILIPINO (Tagalog) sa lahat ng iyong sagot
+        - Huwag maghalo ng English maliban sa mga teknikal na termino (hal. "Photosynthesis", "Quadratic Equation")
+        - Gamitin ang mga Filipino termino gaya ng ginagamit sa DepEd curriculum
+        - Ang lahat ng objectives, procedures, at assessment questions ay dapat nasa Filipino
+        - Mga halimbawa:
+          * English input: "The student demonstrates understanding of..."
+          * Filipino output: "Naipapamalas ng mag-aaral ang pag-unawa sa..."
         """
     else:
-        return f"""
-        IMPORTANT LANGUAGE INSTRUCTION: Use clear, professional English suitable for Philippine classrooms.
-        - Use simple, understandable English
-        - Include Filipino terms when appropriate for local context
-        - Maintain academic standards while being accessible to students
-        {additional_context}
+        return """
+        STRICT LANGUAGE INSTRUCTION:
+        - Use PURE ENGLISH in all your responses
+        - Do not mix Filipino/Tagalog words
+        - Use academic English appropriate for Philippine classrooms
+        - All objectives, procedures, and assessment questions must be in English
+        - If teacher uses Filipino terms, translate them to English
         """
 
 # --- 4. API KEY MANAGER WITH REMEMBER FEATURE ---
@@ -165,7 +206,6 @@ def save_api_key(api_key):
     """Save API key to session state and optionally to browser storage"""
     if api_key:
         st.session_state.api_key = api_key
-        # Also save to Streamlit's session state for persistence
         st.session_state.saved_api_key = api_key
         return True
     return False
@@ -180,34 +220,27 @@ def show_api_key_settings():
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔑 API Key Settings")
     
-    # Load saved API key if exists
     if 'saved_api_key' not in st.session_state:
         st.session_state.saved_api_key = ""
     
-    # Check if we have a saved key
     saved_key = load_saved_api_key()
-    
-    # Create a unique key for the text input
     input_key = f"api_key_input_{hashlib.md5(saved_key.encode() if saved_key else ''.encode()).hexdigest()[:8]}"
     
-    # Get API key from user
     api_key = st.sidebar.text_input(
         "Enter your Google Gemini API Key:",
         type="password",
         placeholder="AIzaSy...",
-        value=saved_key,  # Pre-fill with saved key
+        value=saved_key,
         key=input_key,
         help="Enter your free API key from Google AI Studio"
     )
     
-    # Remember me checkbox
     remember_me = st.sidebar.checkbox(
         "Remember my API key", 
         value=bool(saved_key),
         help="Your API key will be saved in your browser"
     )
     
-    # Save button
     if st.sidebar.button("💾 Save API Key", use_container_width=True):
         if api_key:
             if save_api_key(api_key):
@@ -221,7 +254,6 @@ def show_api_key_settings():
         else:
             st.sidebar.warning("⚠️ Please enter an API key")
     
-    # Clear button
     if saved_key:
         if st.sidebar.button("🗑️ Clear Saved Key", use_container_width=True):
             st.session_state.saved_api_key = ""
@@ -229,17 +261,14 @@ def show_api_key_settings():
             st.sidebar.success("✅ API Key Cleared!")
             st.rerun()
     
-    # Show instructions button
     if st.sidebar.button("📋 How to Get Free API Key", use_container_width=True):
         st.session_state.show_instructions = True
     
-    # Show status
     if st.session_state.get('api_key'):
         st.sidebar.success("✅ API Key Ready")
     else:
         st.sidebar.warning("⚠️ API Key Required")
     
-    # Auto-save if remember me is checked and key is entered
     if api_key and remember_me and api_key != saved_key:
         save_api_key(api_key)
     
@@ -287,7 +316,6 @@ def show_api_key_instructions_page():
     • No spaces before or after the key
     """)
     
-    # Simple button to open link
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔗 OPEN GOOGLE AI STUDIO", use_container_width=True):
@@ -299,49 +327,37 @@ def show_api_key_instructions_page():
             js = "window.open('https://www.youtube.com/results?search_query=how+to+get+google+gemini+api+key')"
             st.components.v1.html(f"<script>{js}</script>", height=0)
     
-    # Back button
     st.markdown("---")
     if st.button("← BACK TO DLP GENERATOR", use_container_width=True):
         st.session_state.show_instructions = False
         st.rerun()
 
-# --- 5. AI GENERATOR WITH LANGUAGE FLEXIBILITY ---
+# --- 5. AI GENERATOR WITH STRICT LANGUAGE MATCHING ---
 def clean_json_string(json_string):
     """Clean the JSON string by removing invalid characters and fixing common issues"""
     if not json_string:
         return json_string
     
-    # Remove markdown code blocks
     json_string = re.sub(r'```json\s*', '', json_string)
     json_string = re.sub(r'```\s*', '', json_string)
+    json_string = json_string.replace('•', '-')
+    json_string = json_string.replace('\u2022', '-')
+    json_string = json_string.replace('\u25cf', '-')
+    json_string = re.sub(r':\s*$', '": ""', json_string)
     
-    # Remove bullet points and other invalid characters
-    json_string = json_string.replace('•', '-')  # Replace bullet points with hyphens
-    json_string = json_string.replace('\u2022', '-')  # Unicode bullet
-    json_string = json_string.replace('\u25cf', '-')  # Black circle bullet
-    
-    # Fix truncated strings (add closing quotes)
-    json_string = re.sub(r':\s*$', '": ""', json_string)  # Fix truncated values at end of line
-    
-    # Fix unclosed quotes in the middle of JSON
     lines = json_string.split('\n')
     cleaned_lines = []
     
     for i, line in enumerate(lines):
-        # Count quotes in the line
         quote_count = line.count('"')
         
-        # If odd number of quotes, add a closing quote at the end
         if quote_count % 2 == 1 and ':' in line:
-            # Find the last colon position
             last_colon_pos = line.rfind(':')
             if last_colon_pos > 0:
-                # Check if there's an opening quote after the colon
                 after_colon = line[last_colon_pos + 1:].strip()
                 if after_colon.startswith('"') and not after_colon.endswith('"'):
                     line = line + '"'
                 elif not after_colon.startswith('"') and after_colon:
-                    # If value doesn't start with quote but should be string
                     value_start = last_colon_pos + 1
                     while value_start < len(line) and line[value_start] in ' \t':
                         value_start += 1
@@ -351,13 +367,9 @@ def clean_json_string(json_string):
         cleaned_lines.append(line)
     
     json_string = '\n'.join(cleaned_lines)
-    
-    # Remove any control characters except newlines and tabs
     json_string = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', json_string)
-    
-    # Fix common JSON issues
-    json_string = re.sub(r',\s*}', '}', json_string)  # Remove trailing commas before }
-    json_string = re.sub(r',\s*]', ']', json_string)  # Remove trailing commas before ]
+    json_string = re.sub(r',\s*}', '}', json_string)
+    json_string = re.sub(r',\s*]', ']', json_string)
     
     return json_string
 
@@ -365,7 +377,6 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
                            obj_cognitive=None, obj_psychomotor=None, obj_affective=None,
                            lesson_topic=None):
     try:
-        # Check if API key is provided
         current_api_key = st.session_state.get('api_key') or st.session_state.get('saved_api_key')
         
         if not current_api_key:
@@ -373,17 +384,14 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
             st.info("Click on '📋 How to Get Free API Key' button in sidebar for instructions")
             return None
         
-        # Use the user's API key
         genai.configure(api_key=current_api_key)
         
-        # Try multiple model options
         model_options = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro']
         model = None
         
         for model_name in model_options:
             try:
                 model = genai.GenerativeModel(model_name)
-                # Test with a simple prompt
                 test_response = model.generate_content("Hello")
                 if test_response:
                     st.sidebar.success(f"✓ Using model: {model_name}")
@@ -392,58 +400,41 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
                 continue
         
         if not model:
-            # Fallback to default
             model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Check if user provided objectives
         user_provided_objectives = obj_cognitive and obj_psychomotor and obj_affective
-        
-        # Check if user provided topic (optional)
         user_provided_topic = lesson_topic and lesson_topic.strip()
         
-        # --- DETECT LANGUAGE FROM USER INPUT ---
-        # Combine all user inputs to detect language
-        user_input_text = ""
-        if content_std:
-            user_input_text += content_std + " "
-        if perf_std:
-            user_input_text += perf_std + " "
-        if competency:
-            user_input_text += competency + " "
-        if obj_cognitive:
-            user_input_text += obj_cognitive + " "
-        if obj_psychomotor:
-            user_input_text += obj_psychomotor + " "
-        if obj_affective:
-            user_input_text += obj_affective + " "
-        if lesson_topic:
-            user_input_text += lesson_topic + " "
-        
-        detected_language = detect_language(user_input_text)
+        # --- DETECT LANGUAGE WITH IMPROVED LOGIC ---
+        detected_language = analyze_language_from_inputs(
+            content_std, perf_std, competency,
+            obj_cognitive, obj_psychomotor, obj_affective,
+            lesson_topic
+        )
         
         # Show language detection info
         if detected_language == "filipino":
-            st.sidebar.info("🌍 Detected: Teacher is using Filipino/Tagalog")
-            st.sidebar.info("🤖 AI will respond in Mixed Tagalog/English")
+            st.sidebar.info("🌍 Language Detected: FILIPINO")
+            st.sidebar.info("📝 AI will respond in PURE FILIPINO")
         else:
-            st.sidebar.info("🌍 Detected: Teacher is using English")
-            st.sidebar.info("🤖 AI will respond in English with Filipino context")
+            st.sidebar.info("🌍 Language Detected: ENGLISH")
+            st.sidebar.info("📝 AI will respond in PURE ENGLISH")
         
-        # Get language-specific prompt
-        language_prompt = get_language_based_prompt(detected_language)
+        # Get strict language instruction
+        language_instruction = get_language_instruction(detected_language)
         
+        # Create base prompt with language instruction
         if user_provided_objectives or user_provided_topic:
-            # Build prompt with user-provided content
             prompt_parts = [
-                f"""You are an expert Filipino teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
+                f"""You are an expert teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
                 Create a JSON object for a Daily Lesson Plan (DLP).
                 Subject: {subject}, Grade: {grade}, Quarter: {quarter}
                 Content Standard: {content_std}
                 Performance Standard: {perf_std}
                 Learning Competency: {competency}"""]
             
-            # Add language instruction
-            prompt_parts.append(language_prompt)
+            # Add STRICT language instruction
+            prompt_parts.append(language_instruction)
             
             if user_provided_objectives:
                 prompt_parts.append(f"""
@@ -468,6 +459,7 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
             5. Do NOT use bullet points (•) or any markdown in the JSON values.
             6. All string values must be properly quoted.
             7. Do NOT include any explanations outside the JSON.
+            8. MATCH THE TEACHER'S LANGUAGE EXACTLY. If teacher used Filipino, use pure Filipino. If teacher used English, use pure English.
 
             Return ONLY raw JSON. No markdown formatting.
             Structure:
@@ -512,16 +504,16 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
             
             prompt = "\n".join(prompt_parts)
         else:
-            # Generate everything automatically with language detection
+            # Generate everything automatically with strict language matching
             prompt = f"""
-            You are an expert Filipino teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
+            You are an expert teacher from Manual National High School in the Division of Davao Del Sur, Region XI, Philippines.
             Create a JSON object for a Daily Lesson Plan (DLP).
             Subject: {subject}, Grade: {grade}, Quarter: {quarter}
             Content Standard: {content_std}
             Performance Standard: {perf_std}
             Learning Competency: {competency}
 
-            {language_prompt}
+            {language_instruction}
 
             CRITICAL INSTRUCTIONS:
             1. You MUST generate exactly 5 distinct MULTIPLE CHOICE assessment questions with A, B, C, D choices.
@@ -531,6 +523,7 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
             5. Do NOT use bullet points (•) or any markdown in the JSON values.
             6. All string values must be properly quoted.
             7. Do NOT include any explanations outside the JSON.
+            8. MATCH THE TEACHER'S LANGUAGE EXACTLY. If teacher used Filipino, use pure Filipino. If teacher used English, use pure English.
 
             Return ONLY raw JSON. No markdown formatting.
             Structure:
@@ -576,17 +569,13 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
         response = model.generate_content(prompt)
         text = response.text
         
-        # Clean the JSON response
         cleaned_text = clean_json_string(text)
         
-        # Log for debugging
         st.sidebar.text_area("Raw AI Response", cleaned_text[:1000], height=200)
         
-        # Try to parse the JSON
         try:
             ai_data = json.loads(cleaned_text)
             
-            # If user provided topic but AI didn't use it, override
             if user_provided_topic and 'topic' in ai_data:
                 ai_data['topic'] = lesson_topic
                 
@@ -595,43 +584,36 @@ def generate_lesson_content(subject, grade, quarter, content_std, perf_std, comp
             st.error(f"JSON Parsing Error: {je}")
             st.sidebar.error("Failed to parse JSON. Attempting manual fix...")
             
-            # Attempt manual extraction
             try:
-                # Try to extract JSON using regex
                 json_pattern = r'\{.*\}'
                 match = re.search(json_pattern, cleaned_text, re.DOTALL)
                 if match:
                     json_str = match.group(0)
-                    # Remove any trailing commas
                     json_str = re.sub(r',\s*}', '}', json_str)
                     json_str = re.sub(r',\s*]', ']', json_str)
                     ai_data = json.loads(json_str)
                     
-                    # If user provided topic but AI didn't use it, override
                     if user_provided_topic and 'topic' in ai_data:
                         ai_data['topic'] = lesson_topic
                         
                     return ai_data
             except Exception as e2:
                 st.error(f"Manual JSON extraction also failed: {e2}")
-                # Create fallback data
                 return create_fallback_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic, detected_language)
         
     except Exception as e:
         st.error(f"AI Generation Error: {str(e)}")
-        # Create fallback data
         return create_fallback_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic, "english")
 
 def create_fallback_data(subject, grade, quarter, content_std, perf_std, competency, lesson_topic=None, language="english"):
     """Create fallback data in case AI generation fails"""
     topic = lesson_topic if lesson_topic else f"Introduction to {subject}"
     
-    # Language-based content
     if language == "filipino":
         return {
-            "obj_1": f"Maunawaan ang mga pangunahing konsepto ng {subject}",
-            "obj_2": f"Magamit ang mga kasanayan sa {subject} sa tunay na buhay",
-            "obj_3": f"Mapahalagahan ang kahalagahan ng {subject}",
+            "obj_1": f"Maunawaan ang mga konsepto ng {subject}",
+            "obj_2": f"Magamit ang mga kasanayan sa {subject}",
+            "obj_3": f"Mapahalagahan ang {subject}",
             "topic": topic,
             "integration_within": f"Kaugnay na mga paksa sa {subject}",
             "integration_across": "Matematika, Agham",
@@ -647,22 +629,22 @@ def create_fallback_data(subject, grade, quarter, content_std, perf_std, compete
                 "purpose_situation": "Real-world application ng paksa",
                 "visual_prompt": "Silid-aralan Pag-aaral",
                 "vocabulary": "Term1: Kahulugan1\nTerm2: Kahulugan2\nTerm3: Kahulugan3\nTerm4: Kahulugan4\nTerm5: Kahulugan5",
-                "activity_main": "Group activity para tuklasin ang paksa",
-                "explicitation": f"Detalyadong paliwanag ng {subject} na may mga halimbawa. Halimbawa 1: Pangunahing aplikasyon. Halimbawa 2: Mas advanced na aplikasyon.",
+                "activity_main": "Grupong gawain para tuklasin ang paksa",
+                "explicitation": f"Detalyadong paliwanag ng {subject} na may mga halimbawa",
                 "group_1": "Gawain sa pananaliksik",
                 "group_2": "Gawain sa paglutas ng problema",
                 "group_3": "Gawain sa presentasyon",
-                "generalization": "Ano ang natutunan mo? Paano mo ito magagamit?"
+                "generalization": "Ano ang natutunan mo?"
             },
             "evaluation": {
                 "assess_q1": f"Ano ang pangunahing konsepto ng {subject}?|A. Konsepto A|B. Konsepto B|C. Konsepto C|D. Konsepto D",
-                "assess_q2": f"Paano mo magagamit ang {subject} sa totoong buhay?|A. Aplikasyon A|B. Aplikasyon B|C. Aplikasyon C|D. Aplikasyon D",
-                "assess_q3": f"Ipaliwanag ang pagkakaiba ng mga termino sa {subject}.|A. Pagkakaiba A|B. Pagkakaiba B|C. Pagkakaiba C|D. Pagkakaiba D",
-                "assess_q4": f"Lutasin ang isang simpleng problema gamit ang konsepto ng {subject}.|A. Solusyon A|B. Solusyon B|C. Solusyon C|D. Solusyon D",
-                "assess_q5": f"Ano ang mga limitasyon ng mga pamamaraan sa {subject}?|A. Limitasyon A|B. Limitasyon B|C. Limitasyon C|D. Limitasyon D",
-                "assignment": "Mag-research pa tungkol sa paksa",
-                "remarks": "Matagumpay na naipasa ang aralin",
-                "reflection": "Nagpakita ng magandang pag-unawa ang mga estudyante"
+                "assess_q2": f"Paano mo magagamit ang {subject}?|A. Gamit A|B. Gamit B|C. Gamit C|D. Gamit D",
+                "assess_q3": f"Ipaliwanag ang kahulugan sa {subject}.|A. Paliwanag A|B. Paliwanag B|C. Paliwanag C|D. Paliwanag D",
+                "assess_q4": f"Lutasin ang problema sa {subject}.|A. Solusyon A|B. Solusyon B|C. Solusyon C|D. Solusyon D",
+                "assess_q5": f"Ano ang limitasyon sa {subject}?|A. Limitasyon A|B. Limitasyon B|C. Limitasyon C|D. Limitasyon D",
+                "assignment": "Mag-research tungkol sa paksa",
+                "remarks": "Matagumpay na aralin",
+                "reflection": "Magandang pag-unawa ng mga estudyante"
             }
         }
     else:
@@ -686,20 +668,20 @@ def create_fallback_data(subject, grade, quarter, content_std, perf_std, compete
                 "visual_prompt": "Classroom Learning",
                 "vocabulary": "Term1: Definition1\nTerm2: Definition2\nTerm3: Definition3\nTerm4: Definition4\nTerm5: Definition5",
                 "activity_main": "Group activity to explore the topic",
-                "explicitation": f"Detailed explanation of {subject} with examples. Example 1: Basic application. Example 2: Advanced application.",
+                "explicitation": f"Detailed explanation of {subject} with examples",
                 "group_1": "Research task",
                 "group_2": "Problem-solving task",
                 "group_3": "Presentation task",
-                "generalization": "What did you learn? How can you apply this?"
+                "generalization": "What did you learn?"
             },
             "evaluation": {
                 "assess_q1": f"What is the main concept of {subject}?|A. Concept A|B. Concept B|C. Concept C|D. Concept D",
-                "assess_q2": f"How would you apply {subject} in real life?|A. Application A|B. Application B|C. Application C|D. Application D",
-                "assess_q3": f"Explain the difference between key terms in {subject}.|A. Difference A|B. Difference B|C. Difference C|D. Difference D",
-                "assess_q4": f"Solve a simple problem using {subject} concepts.|A. Solution A|B. Solution B|C. Solution C|D. Solution D",
-                "assess_q5": f"What are the limitations of {subject} approaches?|A. Limitation A|B. Limitation B|C. Limitation C|D. Limitation D",
-                "assignment": "Research more about the topic",
-                "remarks": "Lesson delivered successfully",
+                "assess_q2": f"How would you apply {subject}?|A. Application A|B. Application B|C. Application C|D. Application D",
+                "assess_q3": f"Explain the meaning in {subject}.|A. Explanation A|B. Explanation B|C. Explanation C|D. Explanation D",
+                "assess_q4": f"Solve the problem in {subject}.|A. Solution A|B. Solution B|C. Solution C|D. Solution D",
+                "assess_q5": f"What are the limitations in {subject}?|A. Limitation A|B. Limitation B|C. Limitation C|D. Limitation D",
+                "assignment": "Research about the topic",
+                "remarks": "Lesson successful",
                 "reflection": "Students showed good understanding"
             }
         }
@@ -772,17 +754,13 @@ def add_row(table, label, content, bold_label=True):
     """Adds a row and applies formatting to the content."""
     row_cells = table.add_row().cells
     
-    # Label Column (Left)
     p_lbl = row_cells[0].paragraphs[0]
     run_lbl = p_lbl.add_run(label)
     if bold_label:
         run_lbl.bold = True
     
-    # Content Column (Right)
     text_content = ""
-    
     if isinstance(content, list):
-        # Join list items with newlines for vertical stacking
         text_content = "\n".join([str(item) for item in content])
     else:
         text_content = str(content) if content else ""
@@ -803,27 +781,21 @@ def parse_multiple_choice_question(q_text):
     if not q_text:
         return "No question provided", []
     
-    # Split by pipe character
     parts = q_text.split('|')
     
     if len(parts) < 5:
-        # If not in expected format, return as-is
         return q_text, []
     
     question = parts[0].strip()
     choices = []
     
-    # Extract choices (should be 4 choices)
     for i in range(1, min(5, len(parts))):
         choice = parts[i].strip()
-        # Ensure choice starts with letter and period
         if not re.match(r'^[A-D]\.', choice):
-            # Add prefix if missing
             choice_prefix = ['A.', 'B.', 'C.', 'D.'][i-1]
             choice = f"{choice_prefix} {choice}"
         choices.append(choice)
     
-    # Ensure we have exactly 4 choices
     while len(choices) < 4:
         choices.append(f"{['A.', 'B.', 'C.', 'D.'][len(choices)]} Choice placeholder")
     
@@ -833,58 +805,44 @@ def add_assessment_row(table, label, eval_sec):
     """Special function to add assessment row with multiple choice questions."""
     row_cells = table.add_row().cells
     
-    # Label Column (Left)
     p_lbl = row_cells[0].paragraphs[0]
     run_lbl = p_lbl.add_run(label)
     run_lbl.bold = True
     
-    # Content Column (Right) - Build from scratch
     content_cell = row_cells[1]
     
-    # Clear cell by removing all existing paragraphs
     for paragraph in content_cell.paragraphs:
         p = paragraph._element
         p.getparent().remove(p)
     
-    # Create new content
-    # 1. Header
     p_header = content_cell.add_paragraph()
     header_run = p_header.add_run("ASSESSMENT (5-item Multiple Choice Quiz)")
     header_run.bold = True
     
-    # 2. Directions
     p_dir = content_cell.add_paragraph()
     p_dir.add_run("DIRECTIONS: Read each question carefully. Choose the letter of the correct answer from options A, B, C, and D.")
     
-    # 3. Empty line for spacing
     content_cell.add_paragraph()
     
-    # 4. Questions with multiple choice format
     for i in range(1, 6):
         question_key = f'assess_q{i}'
         raw_question = eval_sec.get(question_key, f'Question {i}')
         
-        # Parse multiple choice question
         question_text, choices = parse_multiple_choice_question(raw_question)
         
-        # Create question paragraph
         p_question = content_cell.add_paragraph()
         
-        # Add question number (bold)
         num_run = p_question.add_run(f"{i}. ")
         num_run.bold = True
         
-        # Add question text with formatting
         if question_text:
             format_text(p_question, question_text)
         
-        # Add choices (A, B, C, D)
         if choices:
             for choice in choices:
                 p_choice = content_cell.add_paragraph()
                 p_choice.paragraph_format.left_indent = Inches(0.3)
                 
-                # Make the choice letter bold (A., B., etc.)
                 choice_match = re.match(r'^([A-D]\.)\s*(.*)', choice)
                 if choice_match:
                     letter_part = choice_match.group(1)
@@ -896,10 +854,8 @@ def add_assessment_row(table, label, eval_sec):
                     if text_part:
                         format_text(p_choice, text_part)
                 else:
-                    # Fallback if format doesn't match
                     format_text(p_choice, choice)
         else:
-            # Fallback: create placeholder choices
             for letter in ['A.', 'B.', 'C.', 'D.']:
                 p_choice = content_cell.add_paragraph()
                 p_choice.paragraph_format.left_indent = Inches(0.3)
@@ -907,7 +863,6 @@ def add_assessment_row(table, label, eval_sec):
                 letter_run.bold = True
                 p_choice.add_run(f"Choice {letter[0]}")
         
-        # Add spacing between questions (except after last question)
         if i < 5:
             content_cell.add_paragraph()
 
@@ -915,7 +870,6 @@ def add_assessment_row(table, label, eval_sec):
 def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     doc = Document()
     
-    # --- SETUP A4 PAGE SIZE & MARGINS ---
     section = doc.sections[0]
     section.page_width = Mm(210)
     section.page_height = Mm(297)
@@ -924,33 +878,26 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     section.left_margin = Inches(0.5)
     section.right_margin = Inches(0.5)
 
-    # --- HEADER FOR DOCUMENT ---
-    # Add school header to document
     header_para = doc.add_paragraph()
     header_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Department line
     dept_run = header_para.add_run("DEPARTMENT OF EDUCATION REGION XI\n")
     dept_run.bold = True
     dept_run.font.size = Pt(12)
     
-    # Division line
     div_run = header_para.add_run("DIVISION OF DAVAO DEL SUR\n")
     div_run.bold = True
     div_run.font.size = Pt(11)
     
-    # School line
     school_run = header_para.add_run("MANUAL NATIONAL HIGH SCHOOL\n\n")
     school_run.bold = True
     school_run.font.size = Pt(14)
     
-    # Title - CHANGED TO: Daily Lesson Log (DLL) / Daily Lesson Plan (DLP)
     title = doc.add_paragraph("Daily Lesson Log (DLL) / Daily Lesson Plan (DLP)")
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title.runs[0].bold = True
     title.runs[0].font.size = Pt(14)
 
-    # --- TOP INFO TABLE ---
     table_top = doc.add_table(rows=1, cols=4)
     table_top.style = 'Table Grid'
     table_top.autofit = False
@@ -972,7 +919,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     fill_cell(2, "Quarter:", inputs['quarter'])
     fill_cell(3, "Date:", date.today().strftime('%B %d, %Y'))
 
-    # --- MAIN CONTENT TABLE ---
     table_main = doc.add_table(rows=0, cols=2)
     table_main.style = 'Table Grid'
     table_main.autofit = False
@@ -980,13 +926,11 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     table_main.columns[0].width = Inches(2.0)
     table_main.columns[1].width = Inches(5.3)
 
-    # Process Data
     objs = f"1. {ai_data.get('obj_1','')}\n2. {ai_data.get('obj_2','')}\n3. {ai_data.get('obj_3','')}"
     r = ai_data.get('resources', {})
     proc = ai_data.get('procedure', {})
     eval_sec = ai_data.get('evaluation', {})
 
-    # SECTION I
     add_section_header(table_main, "I. CURRICULUM CONTENT, STANDARD AND LESSON COMPETENCIES")
     add_row(table_main, "A. Content Standard", inputs['content_std'])
     add_row(table_main, "B. Performance Standard", inputs['perf_std'])
@@ -1002,7 +946,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     add_row(table_main, "D. Content", ai_data.get('topic', ''))
     add_row(table_main, "E. Integration", f"Within: {ai_data.get('integration_within','')}\nAcross: {ai_data.get('integration_across','')}")
 
-    # SECTION II
     add_section_header(table_main, "II. LEARNING RESOURCES")
     add_row(table_main, "Teacher Guide", r.get('guide', ''))
     add_row(table_main, "Learner's Materials(LMs)", r.get('materials', ''))
@@ -1010,11 +953,9 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     add_row(table_main, "Learning Resource (LR) Portal", r.get('portal', ''))
     add_row(table_main, "Other Learning Resources", r.get('other', ''))
 
-    # SECTION III
     add_section_header(table_main, "III. TEACHING AND LEARNING PROCEDURE")
     add_row(table_main, "A. Activating Prior Knowledge", proc.get('review', ''))
     
-    # --- IMAGE ROW ---
     row_img = table_main.add_row().cells
     row_img[0].paragraphs[0].add_run("B. Establishing Lesson Purpose").bold = True
     
@@ -1042,8 +983,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
         
     cell_img.add_paragraph(f"\nVocabulary:\n{proc.get('vocabulary','')}")
 
-    # --- REVISED: C. Developing Understanding Section ---
-    # Create the content for this section with the new format
     developing_content = f"Activity: {proc.get('activity_main','')}\n\n"
     developing_content += f"EXPLICITATION: {proc.get('explicitation','')}\n\n"
     developing_content += f"Group 1: {proc.get('group_1','')}\n"
@@ -1053,7 +992,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     add_row(table_main, "C. Developing Understanding", developing_content)
     add_row(table_main, "D. Making Generalization", proc.get('generalization', ''))
 
-    # SECTION IV - REVISED ASSESSMENT SECTION
     add_section_header(table_main, "IV. EVALUATING LEARNING")
     add_assessment_row(table_main, "A. Assessment", eval_sec)
     add_row(table_main, "B. Assignment", eval_sec.get('assignment', ''))
@@ -1062,7 +1000,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
 
     doc.add_paragraph()
 
-    # --- SIGNATORIES TABLE ---
     sig_table = doc.add_table(rows=1, cols=2)
     sig_table.autofit = False
     
@@ -1071,7 +1008,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     
     row = sig_table.rows[0]
     
-    # LEFT COLUMN: TEACHER SIGNATURE
     teacher_cell = row.cells[0]
     
     teacher_header_p = teacher_cell.add_paragraph()
@@ -1087,7 +1023,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     teacher_position_p = teacher_cell.add_paragraph()
     teacher_position_p.add_run("Teacher III")
     
-    # RIGHT COLUMN: PRINCIPAL SIGNATURE
     principal_cell = row.cells[1]
     
     principal_header_p = principal_cell.add_paragraph()
@@ -1103,7 +1038,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
     principal_position_p = principal_cell.add_paragraph()
     principal_position_p.add_run("Principal III")
 
-    # Save to BytesIO
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
@@ -1111,7 +1045,6 @@ def create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image):
 
 # --- 9. MAIN STREAMLIT APP ---
 def main():
-    # Initialize session state
     if 'show_instructions' not in st.session_state:
         st.session_state.show_instructions = False
     if 'saved_api_key' not in st.session_state:
@@ -1119,30 +1052,23 @@ def main():
     if 'api_key' not in st.session_state:
         st.session_state.api_key = st.session_state.saved_api_key
     
-    # Show instructions page if requested
     if st.session_state.show_instructions:
         show_api_key_instructions_page()
         return
     
-    # Add custom header
     add_custom_header()
     
-    # App Title
     st.markdown('<p class="app-title">Daily Lesson Plan (DLP) Generator</p>', unsafe_allow_html=True)
     
-    # Get API key from user with remember feature
     api_key = show_api_key_settings()
     
-    # Use saved key if no current input
     if not api_key and st.session_state.saved_api_key:
         api_key = st.session_state.saved_api_key
         st.session_state.api_key = api_key
     
-    # Show welcome message if key is already saved
     if st.session_state.saved_api_key and not st.session_state.show_instructions:
         st.sidebar.info("✅ Your API key is saved! Ready to generate DLP.")
     
-    # Show warning if no API key
     if not api_key:
         st.warning("""
         ⚠️ **API Key Required**
@@ -1159,7 +1085,6 @@ def main():
     with st.sidebar:
         st.header("📋 User Information")
         
-        # Set default names
         teacher_name = st.text_input("Teacher Name", value="RICHARD P. SAMORANOS")
         principal_name = st.text_input("Principal Name", value="ROSALITA A. ESTROPIA")
         
@@ -1167,26 +1092,22 @@ def main():
         st.info("Upload an image (optional) for the lesson")
         uploaded_image = st.file_uploader("Choose an image for lesson", type=['png', 'jpg', 'jpeg'], key="lesson")
         
-        # Language info
         st.markdown("---")
-        st.info("🌍 **Language Feature:**")
-        st.caption("• AI automatically detects if you're using Filipino or English")
-        st.caption("• Responds in the same language you use")
-        st.caption("• Uses Mixed Tagalog/English for Filipino inputs")
+        st.info("🌍 **Smart Language Detection:**")
+        st.caption("• AI detects if you're using Filipino or English")
+        st.caption("• Responds in the EXACT same language")
+        st.caption("• No mixed language - pure Filipino or pure English")
         
-        # Show saved key status
         if st.session_state.saved_api_key:
             st.markdown("---")
             st.success("🔑 API Key Status: SAVED")
             st.caption("Your key is saved for future use")
     
-    # Form Inputs
     col1, col2, col3 = st.columns(3)
     with col1:
         subject = st.text_input("Subject Area", placeholder="e.g., Mathematics")
     
     with col2:
-        # Grade Level Dropdown
         grade_options = [
             "Kinder",
             "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
@@ -1196,29 +1117,26 @@ def main():
         grade = st.selectbox("Grade Level", grade_options, index=6)
     
     with col3:
-        # Quarter Dropdown
         quarter_options = ["I", "II", "III", "IV"]
         quarter = st.selectbox("Quarter", quarter_options, index=2)
     
-    content_std = st.text_area("Content Standard", placeholder="Ang mag-aaral ay naipamamalas ang pag-unawa sa...")
-    perf_std = st.text_area("Performance Standard", placeholder="Ang mag-aaral ay nakagagawa ng...")
+    content_std = st.text_area("Content Standard", placeholder="The learner demonstrates understanding of...")
+    perf_std = st.text_area("Performance Standard", placeholder="The learner is able to...")
     competency = st.text_area("Learning Competency", placeholder="Competency code and description...")
     
     st.markdown("---")
     
-    # Optional: Lesson Content/Topic
     with st.expander("📚 Optional: Lesson Content / Topic", expanded=False):
         st.info("Enter the specific topic or content for this lesson. Leave blank if you want AI to generate it.")
         
         lesson_topic = st.text_area(
             "Lesson Content / Topic",
-            placeholder="e.g., Pagkilala sa mga Bahagi ng Halaman\nOr leave blank for AI to generate",
+            placeholder="e.g., Introduction to Quadratic Equations\nOr leave blank for AI to generate",
             height=120
         )
     
     st.markdown("---")
     
-    # Optional: Lesson Objectives
     with st.expander("📝 Optional: Lesson Objectives", expanded=False):
         st.info("If you already have your lesson objectives, enter them below. Otherwise, leave blank and AI will generate them.")
         
@@ -1227,30 +1145,28 @@ def main():
         with col_obj1:
             obj_cognitive = st.text_area(
                 "Cognitive Objective",
-                placeholder="e.g., Makilala ang mga bahagi ng halaman\n(Leave blank for AI)",
+                placeholder="e.g., Solve quadratic equations\n(Leave blank for AI)",
                 height=100
             )
         
         with col_obj2:
             obj_psychomotor = st.text_area(
                 "Psychomotor Objective",
-                placeholder="e.g., Iguhit at lagyan ng label ang mga bahagi ng halaman\n(Leave blank for AI)",
+                placeholder="e.g., Graph quadratic functions\n(Leave blank for AI)",
                 height=100
             )
         
         with col_obj3:
             obj_affective = st.text_area(
                 "Affective Objective",
-                placeholder="e.g., Mapahalagahan ang kahalagahan ng mga halaman\n(Leave blank for AI)",
+                placeholder="e.g., Appreciate real-world applications\n(Leave blank for AI)",
                 height=100
             )
     
     st.markdown("---")
     
-    # Check if we have API key (either current or saved)
     has_api_key = bool(api_key or st.session_state.saved_api_key or st.session_state.get('api_key'))
     
-    # Generate Button
     if st.button("🚀 Generate DLP", type="primary", use_container_width=True, disabled=not has_api_key):
         if not has_api_key:
             st.error("❌ Please enter and save your Google Gemini API Key in the sidebar first!")
@@ -1260,11 +1176,9 @@ def main():
             st.error("Please fill all required fields")
             return
         
-        # Check user-provided content
         user_provided_topic = lesson_topic and lesson_topic.strip()
         user_provided_objectives = obj_cognitive and obj_psychomotor and obj_affective
         
-        # Show user what's being used
         provided_items = []
         if user_provided_topic:
             provided_items.append("topic")
@@ -1290,7 +1204,6 @@ def main():
         if ai_data:
             st.success("✅ AI content generated successfully!")
             
-            # Show topic preview
             st.subheader("📚 Generated Lesson Content")
             col_topic, col_integration = st.columns(2)
             
@@ -1303,7 +1216,6 @@ def main():
                 st.write(f"Within Subject: {ai_data.get('integration_within', 'N/A')}")
                 st.write(f"Across Subjects: {ai_data.get('integration_across', 'N/A')}")
             
-            # Show objectives preview
             st.subheader("📋 Generated Objectives")
             col_obj_pre1, col_obj_pre2, col_obj_pre3 = st.columns(3)
             
@@ -1319,7 +1231,6 @@ def main():
                 st.info("**Affective**")
                 st.write(ai_data.get('obj_3', 'N/A'))
             
-            # Show assessment preview
             with st.expander("📝 Preview Assessment Questions"):
                 for i in range(1, 6):
                     question_key = f'assess_q{i}'
@@ -1332,11 +1243,9 @@ def main():
                                 st.write(f"  {choice}")
                         st.markdown("---")
             
-            # Full preview
             with st.expander("📄 Preview All Generated Content"):
                 st.json(ai_data)
             
-            # Create DOCX
             inputs = {
                 'subject': subject,
                 'grade': grade,
@@ -1349,7 +1258,6 @@ def main():
             with st.spinner("📄 Creating DOCX file..."):
                 docx_buffer = create_docx(inputs, ai_data, teacher_name, principal_name, uploaded_image)
             
-            # Download button
             st.download_button(
                 label="📥 Download DLP (.docx)",
                 data=docx_buffer,
@@ -1358,11 +1266,9 @@ def main():
                 use_container_width=True
             )
             
-            # Success message
             st.balloons()
             st.success(f"✅ DLP generated for {subject} - {grade} - Quarter {quarter}")
             
-            # Reminder about saved API key
             if st.session_state.saved_api_key:
                 st.info("💡 Your API key is saved. You can use the app again without re-entering it!")
         else:
